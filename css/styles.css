@@ -176,11 +176,42 @@ p {
 }
 
 
-.site-title {
+.site-header-inner {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 16px;
 
     max-width: var(--content-width);
 
     margin: 0 auto;
+
+}
+
+
+.site-logo {
+
+    width: 48px;
+
+    height: 48px;
+
+    flex-shrink: 0;
+
+    border-radius: var(--radius-medium);
+
+}
+
+
+.site-header-text {
+
+    min-width: 0;
+
+}
+
+
+.site-title {
 
     color: var(--color-header-text);
 
@@ -195,9 +226,7 @@ p {
 
 .site-subtitle {
 
-    max-width: var(--content-width);
-
-    margin: 3px auto 0;
+    margin: 3px 0 0;
 
     color: var(--color-header-subtext);
 
@@ -734,6 +763,25 @@ tbody tr:last-child td {
 }
 
 
+#affinityRefTable td,
+#affinityRefTable th {
+
+    cursor: pointer;
+
+}
+
+
+#affinityRefTable td.affinity-highlight {
+
+    background: var(--color-primary);
+
+    color: #ffffff;
+
+    font-weight: 700;
+
+}
+
+
 /* ============================================================
    15. LINKS
    ============================================================ */
@@ -852,6 +900,15 @@ a:hover {
     .site-header {
 
         padding: 15px 16px 12px;
+
+    }
+
+
+    .site-logo {
+
+        width: 36px;
+
+        height: 36px;
 
     }
 

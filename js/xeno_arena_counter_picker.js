@@ -21,6 +21,30 @@ data.forEach(d=>{
   refBody.appendChild(tr);
 });
 
+// Click an affinity anywhere in the reference table to highlight every cell containing it
+const refTableEl = document.getElementById('affinityRefTable');
+if(refTableEl){
+  refTableEl.addEventListener('click', (e)=>{
+    const cell = e.target.closest('td, th');
+    if(!cell) return;
+    const name = cell.textContent.trim();
+    if(!affinities.includes(name)) return;
+
+    const alreadyActive = refTableEl.dataset.highlighted === name;
+    refTableEl.querySelectorAll('td.affinity-highlight').forEach(el=>el.classList.remove('affinity-highlight'));
+
+    if(alreadyActive){
+      delete refTableEl.dataset.highlighted;
+      return;
+    }
+
+    refTableEl.dataset.highlighted = name;
+    refTableEl.querySelectorAll('td').forEach(el=>{
+      if(el.textContent.trim() === name) el.classList.add('affinity-highlight');
+    });
+  });
+}
+
 // Build 3 dropdown inputs
 const inputsDiv = document.getElementById('inputs');
 for(let i=1;i<=3;i++){
