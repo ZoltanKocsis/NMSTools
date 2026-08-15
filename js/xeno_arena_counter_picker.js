@@ -15,8 +15,8 @@ const byName = Object.fromEntries(data.map(d=>[d.a,d]));
 const refBody = document.getElementById('refTable');
 data.forEach(d=>{
   const tr = document.createElement('tr');
-  const ds = d.ds ? d.ds : '<span style="color:var(--muted)">— unknown —</span>';
-  const dw = d.dw ? d.dw : '<span style="color:var(--muted)">— unknown —</span>';
+  const ds = d.ds ? d.ds : '<span style="color:var(--color-text-muted)">— unknown —</span>';
+  const dw = d.dw ? d.dw : '<span style="color:var(--color-text-muted)">— unknown —</span>';
   tr.innerHTML = `<td>${d.a}</td><td>${d.as}</td><td>${d.aw}</td><td>${ds}</td><td>${dw}</td>`;
   refBody.appendChild(tr);
 });
@@ -25,7 +25,7 @@ data.forEach(d=>{
 const inputsDiv = document.getElementById('inputs');
 for(let i=1;i<=3;i++){
   const f = document.createElement('div');
-  f.className='field';
+  f.className='form-group';
   f.innerHTML = `<label>Opponent Pet ${i}</label>
     <select id="opp${i}">${affinities.map(a=>`<option value="${a}">${a}</option>`).join('')}</select>`;
   inputsDiv.appendChild(f);
@@ -86,7 +86,7 @@ function renderTeam(containerId, assignment, opps){
     const div = document.createElement('div');
     div.className='pet-slot';
     const unknownNote = (byName[c].ds===null || byName[c].dw===null) ? '<span class="tag warn">partial defense data</span>' : '';
-    div.innerHTML = `<div class="left"><b>${c}</b> — vs opponent's <b>${o}</b></div>${tagFor(raw)}${unknownNote}`;
+    div.innerHTML = `<div class="pet-slot-label"><b>${c}</b> — vs opponent's <b>${o}</b></div>${tagFor(raw)}${unknownNote}`;
     container.appendChild(div);
   });
 }
