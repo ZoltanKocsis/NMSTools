@@ -476,7 +476,7 @@ input:focus {
 
 select {
 
-    width: 100%;
+    width: 50%;
 
     max-width: 500px;
 
