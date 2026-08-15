@@ -2,57 +2,80 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Xeno Arena Counter Picker v2</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAsQAAALEBxi1JjQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAKDSURBVFiFxdc/iFVHFMfxz6hR8S+rgo0ERQlICv8s/mGDhX9JxMImhCAIasBCQbEICVgEbOxs7LVTSCCINopYSNQ1sYiFCgYT1EJFMahBjTGOxZsLj5c7d252V3fgwHv3/M6c7ztz7sy8EGM0mmPMqGZvCxA6Y28IYTCE8CSEcCGEsHtECGKMjZYgf0SsseOl+OL8LQB2ZJJXtqVHPxbrU9x6hOEC/F4AuN6l7cedHv9FzBkSAPoKySP+xWQsxLOM5myuEiWAj1sARMzHiYLmkywApuIATuMHfJ6eT8A/hYlfYFoLyH2ZH2kG/qgJOJoa6qfCxGexqAXAnhzA4YagXRgorH8/PmwBsDYHcLMh6EES7cTLHt9zbOua6FbDPKca+izbuZXNTcKF2I/j+BYf9Uy0KRP/ELOTZhFWYWY3wKU2AF0BU7ERB/E1lmNs8n2J+ynuCY5gKdbgWk/1vqsAtjYkfyS9v1iMy3hdo3uKY5iC8alaE1Pchprlq2x79auOZgS7k38AfxYqFTGIvq5qjSv0xsVKOCmVtNp2/8I+nYNoXfpeSl7Z1a41/7SgfVzXlXMxLn2ek8rbNnll51L8VwXdjdJWfHIIySvbgc8Kmv1Nyb8YRvKYemYe7mX81zAtl3wGHgwTIOqcK/242/P8DKZnT0P5t2IothkBK7EdCxqPY817/1DsLsa3vpDg+xEGiHqubd1WdyteXvNsuKM/56gDmPgOAD74PwCD7wDgl6ynpgdWGdn1v41JrZswQXyDNw2TvsIV/FZI/ggDTbttddT+Z4QQVmMPlujcDS/hPH7GrzHGv5NuFlbovOfLkv65zi35UIzxdtPaZAHe1xj1f8dvAeJgNYApR9HvAAAAAElFTkSuQmCC">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<div class="wrap">
-  <h1>⚔️ Xeno Arena Counter Picker</h1>
-  <p class="sub">Attack and Defense are weighted equally. Enter your opponent's 3 pet affinities — results assume you can only field one pet per affinity type (no duplicates).</p>
-   
 
-  <div class="card">
-    <div class="row" id="inputs"></div>
-    <button onclick="calculate()">Find My Best Teams</button>
-  </div>
+<header class="site-header">
+    <div class="site-title">Xeno Arena Counter Picker</div>
+    <div class="site-subtitle">Find the best type matchups against your opponent's pets</div>
+</header>
 
-  <div class="card" id="resultCard" style="display:none;">
-    <h2>🅰️ Best Team</h2>
-    <div class="result-title">Optimal 3 distinct affinities, one assigned per opponent pet (no duplicate affinities allowed)</div>
-    <p class="note" id="summaryA"></p>
-    <div id="resultsA"></div>
-    <div class="note" id="extraNoteA"></div>
+<nav class="main-navigation" aria-label="Main navigation">
+    <a href="index.html" class="nav-tab">Home</a>
+    <a href="xeno_arena_counter_picker.html" class="nav-tab active">Counter Calculator</a>
+    <a href="#" class="nav-tab">About</a>
+</nav>
 
-    <hr class="divider">
-    <div>
-      <h2>🅱️ Top 5 Individual Pets (1-vs-1 vs all 3 opponents)</h2>
-      <div class="result-title">Every affinity ranked by how it would fare fighting each opponent one-on-one</div>
-      <p class="note" id="summaryB"></p>
-      <div class="table-scroll">
-        <table>
-          <thead><tr id="rankHeaderRow"></tr></thead>
-          <tbody id="rankTableBody"></tbody>
-        </table>
-      </div>
-      <div class="note" id="extraNoteB"></div>
-    </div>
-  </div>
+<main class="page-container">
 
-  <div class="card" id="feedbackCard" style="display:none;">
-    <div class="result-title">Note</div>
-    <div class="note" id="gapNote"></div>
-  </div>
+    <section class="page-introduction">
+        <h1>⚔️ Xeno Arena Counter Picker</h1>
+        <p>Attack and Defense are weighted equally. Enter your opponent's 3 pet affinities — results assume you can only field one pet per affinity type (no duplicates).</p>
+    </section>
 
-  <div class="card">
-    <div class="result-title">Affinity Reference Table</div>
-    <table>
-      <tr><th>Affinity</th><th>Atk Strong vs</th><th>Atk Weak vs</th><th>Def Strong vs</th><th>Def Weak vs</th></tr>
-      <tbody id="refTable"></tbody>
-    </table>
-  </div>
-</div>
+    <section class="content-panel">
+        <div class="row" id="inputs"></div>
+        <button type="button" class="button" onclick="calculate()">Find My Best Teams</button>
+    </section>
 
-<script src="xeno_arena_counter_picker.js"></script>
+    <section class="content-panel" id="resultCard" style="display:none;">
+        <h2>🅰️ Best Team</h2>
+        <div class="section-subtitle">Optimal 3 distinct affinities, one assigned per opponent pet (no duplicate affinities allowed)</div>
+        <p class="text-muted" id="summaryA"></p>
+        <div id="resultsA"></div>
+        <div class="text-muted" id="extraNoteA"></div>
+
+        <hr class="section-divider">
+
+        <div>
+            <h2>🅱️ Top 5 Individual Pets (1-vs-1 vs all 3 opponents)</h2>
+            <div class="section-subtitle">Every affinity ranked by how it would fare fighting each opponent one-on-one</div>
+            <p class="text-muted" id="summaryB"></p>
+            <div class="table-container">
+                <table>
+                    <thead><tr id="rankHeaderRow"></tr></thead>
+                    <tbody id="rankTableBody"></tbody>
+                </table>
+            </div>
+            <div class="text-muted" id="extraNoteB"></div>
+        </div>
+    </section>
+
+    <section class="content-panel" id="feedbackCard" style="display:none;">
+        <div class="section-subtitle">Note</div>
+        <div class="text-muted" id="gapNote"></div>
+    </section>
+
+    <section class="content-panel">
+        <div class="section-subtitle">Affinity Reference Table</div>
+        <div class="table-container">
+            <table>
+                <tr><th>Affinity</th><th>Atk Strong vs</th><th>Atk Weak vs</th><th>Def Strong vs</th><th>Def Weak vs</th></tr>
+                <tbody id="refTable"></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer">
+    <p>Xeno Arena Counter Picker — part of the NMS tools and knowledge base project.</p>
+</footer>
+
+<script src="js/xeno_arena_counter_picker.js"></script>
 </body>
 </html>
