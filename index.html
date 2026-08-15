@@ -12,8 +12,8 @@
     <!-- Main stylesheet -->
     <link rel="stylesheet" href="css/styles.css">
 
-    <!-- Optional favicon -->
-    <link rel="icon" href="images/favicon-96x96.png">
+    <!-- Favicon (embedded as base64 so it always loads, even offline/from disk) -->
+    <link rel="icon" type="image/png" href="data:image/png;base64,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">
 </head>
 
 
@@ -25,12 +25,22 @@
 
     <header class="site-header">
 
-        <div class="site-title">
-           No Man's Sky usefull tools fun page
-        </div>
+        <div class="site-header-inner">
 
-        <div class="site-subtitle">
-            Developed some useful web-apps that make life easier using NMS. Some of them exist but I tried to make some more user friendly simpler , or more accurate. My key phrase " keep it simple and elegant". ( I'll try to stick to Html/css/JS so that the tools can be used offline, downloaded to any OP system. Right now I optimize everything for desktop app )
+            <img src="images/favicon-96x96.png" alt="Site logo" class="site-logo">
+
+            <div class="site-header-text">
+
+                <div class="site-title">
+                   No Man's Sky usefull tools fun page
+                </div>
+
+                <div class="site-subtitle">
+                    Developed some useful web-apps that make life easier using NMS. Some of them exist but I tried to make some more user friendly simpler , or more accurate. My key phrase " keep it simple and elegant". ( I'll try to stick to Html/css/JS so that the tools can be used offline, downloaded to any OP system. Right now I optimize everything for desktop app )
+                </div>
+
+            </div>
+
         </div>
 
     </header>
@@ -79,7 +89,7 @@
                 Developed some useful web-apps that make life easier using NMS. Some of them exist but I tried to make some more user friendly simpler , or more accurate. My key phrase " keep it simple and elegant". ( I'll try to stick to Html/css/js)  The tools can be used offline, downloaded to any OP system. Right now I optimize everything for desktop usage )
 
             </p>
-              <p> Xeno Arena right now is the most usefull application</p>
+              <p> <a href="xeno_arena_counter_picker.html">Xeno Arena right now is the most usefull application</a></p>
 
         </section>
 
