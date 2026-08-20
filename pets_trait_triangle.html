@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Responsive layout -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Page title shown in the browser tab -->
+    <title>Pets Trait Triangle — NMS tools and knowledge base fun project</title>
+
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Page-specific stylesheet (kept separate from styles.css on purpose) -->
+    <link rel="stylesheet" href="css/nms_trait_triangle.css">
+
+    <!-- Optional favicon -->
+    <link rel="icon" href="images/favicon-96x96.png">
+
+    <!-- Shared header + navigation (see js/partials.js) -->
+    <script src="js/partials.js"></script>
+</head>
+
+
+<body>
+
+    <!-- Header + navigation are injected here by js/partials.js -->
+    <div id="site-chrome"></div>
+
+
+    <!-- =========================================================
+         PETS TRAIT TRIANGLE (page-specific styling lives in
+         css/nms_trait_triangle.css, scoped to .trait-triangle-page)
+         ========================================================= -->
+
+    <main class="trait-triangle-page">
+        <div class="wrap">
+
+            <header class="head">
+                <h1>Companion trait triangle</h1>
+                <p>Each trait owns one corner and the side opposite it. At the corner the trait is 100%; on the opposite side it is 0%, which means its opposite pole is 100%. The dot shows the blend, and the background colour under it is the real mix of the three.</p>
+            </header>
+
+            <div class="grid">
+
+                <div>
+                    <div class="card">
+                        <svg id="tri" class="triangle" viewBox="0 0 680 500" role="img" aria-label="Trait triangle showing the blend of three companion traits">
+                            <defs>
+                                <linearGradient id="gHelpful" gradientUnits="userSpaceOnUse" x1="150" y1="409" x2="435" y2="244.5">
+                                    <stop offset="0" stop-color="#3ddc84" stop-opacity="1"/>
+                                    <stop offset="1" stop-color="#3ddc84" stop-opacity="0"/>
+                                </linearGradient>
+                                <linearGradient id="gGentle" gradientUnits="userSpaceOnUse" x1="340" y1="80" x2="340" y2="409">
+                                    <stop offset="0" stop-color="#ff4d4d" stop-opacity="1"/>
+                                    <stop offset="1" stop-color="#ff4d4d" stop-opacity="0"/>
+                                </linearGradient>
+                                <linearGradient id="gDevoted" gradientUnits="userSpaceOnUse" x1="530" y1="409" x2="245" y2="244.5">
+                                    <stop offset="0" stop-color="#4d9dff" stop-opacity="1"/>
+                                    <stop offset="1" stop-color="#4d9dff" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+
+                            <!-- barycentric colour field: three ramps, additively blended -->
+                            <g class="field">
+                                <polygon points="340,80 150,409 530,409" fill="#000"/>
+                                <polygon points="340,80 150,409 530,409" fill="url(#gHelpful)"/>
+                                <polygon points="340,80 150,409 530,409" fill="url(#gGentle)"/>
+                                <polygon points="340,80 150,409 530,409" fill="url(#gDevoted)"/>
+                            </g>
+
+                            <!-- each side is the zero line of the trait in the opposite corner -->
+                            <line class="side" x1="150" y1="409" x2="530" y2="409" stroke="#ff4d4d"/>
+                            <line class="side" x1="340" y1="80"  x2="530" y2="409" stroke="#3ddc84"/>
+                            <line class="side" x1="340" y1="80"  x2="150" y2="409" stroke="#4d9dff"/>
+
+                            <line class="tie" id="tie0" stroke="#3ddc84"/>
+                            <line class="tie" id="tie1" stroke="#ff4d4d"/>
+                            <line class="tie" id="tie2" stroke="#4d9dff"/>
+
+                            <circle id="dot" class="dot" r="8" cx="410" cy="248"/>
+
+                            <text class="pole" x="340" y="52"  text-anchor="middle">Gentle</text>
+                            <text class="pct"  x="340" y="70"  text-anchor="middle" id="v1">100%</text>
+                            <text class="pole" x="150" y="437" text-anchor="middle">Helpful</text>
+                            <text class="pct"  x="150" y="455" text-anchor="middle" id="v0">15%</text>
+                            <text class="pole" x="530" y="437" text-anchor="middle">Devoted</text>
+                            <text class="pct"  x="530" y="455" text-anchor="middle" id="v2">90%</text>
+
+                            <text class="anti" x="340" y="437" text-anchor="middle">Aggressive</text>
+                            <text class="pct"  x="340" y="455" text-anchor="middle" id="o1">0%</text>
+                            <text class="anti" x="470" y="238" text-anchor="start">Playful</text>
+                            <text class="pct"  x="470" y="256" text-anchor="start" id="o0">85%</text>
+                            <text class="anti" x="210" y="238" text-anchor="end">Independent</text>
+                            <text class="pct"  x="210" y="256" text-anchor="end" id="o2">10%</text>
+                        </svg>
+
+                        <p class="caveat">The dot shows proportions only. A 100/100/100 pet and a 10/10/10 pet both sit dead centre &mdash; read the exact numbers from the sliders.</p>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="card">
+                        <h2>Read-out</h2>
+                        <p class="name" id="buildName">Whimsical guardian</p>
+                        <p class="summary" id="buildSummary"></p>
+                        <div class="note" id="buildNote" hidden></div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Adjust</h2>
+                        <div style="margin-top:14px" id="sliders"></div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Active auto-actions</h2>
+                        <table style="margin-top:10px">
+                            <thead><tr><th></th><th>Trait</th><th>Effect in the arena</th><th>Fires</th></tr></thead>
+                            <tbody id="effects"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+
+    <!-- =========================================================
+         FOOTER
+         ========================================================= -->
+
+    <footer class="site-footer">
+        <p>Pets Trait Triangle — part of the NMS tools and knowledge base project.</p>
+    </footer>
+
+    <script src="js/nms_trait_triangle.js"></script>
+
+</body>
+
+</html>

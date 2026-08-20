@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <!-- Responsive layout -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Page title shown in the browser tab -->
+    <title>Visited Planets — NMS tools and knowledge base fun project</title>
+
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Optional favicon -->
+    <link rel="icon" href="images/favicon-96x96.png">
+
+    <!-- Shared header + navigation (see js/partials.js) -->
+    <script src="js/partials.js"></script>
+</head>
+
+
+<body>
+
+    <!-- Header + navigation are injected here by js/partials.js -->
+    <div id="site-chrome"></div>
+
+
+    <!-- =========================================================
+         MAIN PAGE CONTENT
+         ========================================================= -->
+
+    <main class="page-container">
+
+        <section class="page-introduction">
+
+            <h1>Visited Planets</h1>
+
+            <p>
+                Build a portal address by clicking glyphs below, or add a blank row
+                and type an address directly into the table. Each row has its own
+                Save button — it writes the whole table out to a CSV file on your
+                computer.
+            </p>
+
+        </section>
+
+
+        <!-- =====================================================
+             PORTAL GLYPH BUILDER
+             ===================================================== -->
+
+        <section class="content-panel glyph-builder">
+
+            <h2>Portal Glyph Builder</h2>
+
+            <div id="builder-slots" class="glyph-builder-slots"></div>
+
+            <div id="builder-code" class="glyph-builder-code"></div>
+
+            <div id="glyph-palette" class="glyph-palette"></div>
+
+            <div class="glyph-builder-actions">
+                <button type="button" id="builder-backspace" class="button secondary">← Backspace</button>
+                <button type="button" id="builder-clear" class="button secondary">Clear</button>
+                <button type="button" id="builder-add-row" class="button" disabled>Add as new row</button>
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             VISITED PLANETS TABLE
+             ===================================================== -->
+
+        <section class="content-panel">
+
+            <h2>Visited Planets</h2>
+
+            <div class="table-toolbar">
+
+                <div class="toolbar-group">
+                    <button type="button" id="add-row-btn" class="button">+ Add row</button>
+                    <button type="button" id="choose-file-btn" class="button secondary">Choose save file…</button>
+                    <button type="button" id="clear-all-btn" class="button secondary">Clear all</button>
+                </div>
+
+                <div class="toolbar-group">
+                    <span id="file-status" class="storage-status"></span>
+                </div>
+
+            </div>
+
+            <div class="table-container">
+
+                <table class="planet-table">
+
+                    <thead>
+                        <tr>
+                            <th style="width:16%">Galaxy</th>
+                            <th style="width:14%">Portal Address</th>
+                            <th style="width:16%">Main Biome</th>
+                            <th style="width:7%">Outlaw</th>
+                            <th style="width:8%">Dissonant</th>
+                            <th style="width:27%">Notes</th>
+                            <th style="width:12%">Save</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="planet-tbody">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             ABOUT
+             ===================================================== -->
+
+        <section class="content-panel text-small text-muted">
+
+            <h3>About this tool</h3>
+
+            <p>
+                A portal address is 12 hex glyphs:
+                <strong>Planet Index (1) + Solar System Index (3) + Y (2) + Z (3) + X (3)</strong>.
+                The galaxy itself is not part of the address — portals only connect
+                within their own galaxy — which is why Galaxy is its own column here.
+            </p>
+
+            <p>
+                Named galaxies 1–50 and the biome descriptor list live at the top of
+                <code>js/visited_planets.js</code> — edit those arrays directly to add
+                more galaxies or swap in your own curated biome names.
+            </p>
+
+            <p>
+                Each row's Save button writes the entire table to one CSV file.
+                In Chrome or Edge, use "Choose save file…" once and every Save after
+                that overwrites the same file directly. In other browsers, Save
+                downloads a fresh CSV each time.
+            </p>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================================================
+         FOOTER
+         ========================================================= -->
+
+    <footer class="site-footer">
+
+        <p>
+           balbla footer
+        </p>
+
+    </footer>
+
+
+    <!-- =========================================================
+         JAVASCRIPT
+         ========================================================= -->
+
+    <script src="js/visited_planets.js"></script>
+
+</body>
+
+</html>

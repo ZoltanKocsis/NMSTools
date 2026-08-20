@@ -14,47 +14,41 @@
 
     /* Main colours */
 
-    --color-primary: #b33a3a;
-    --color-primary-hover: #962f2f;
-    --color-primary-dark: #7f2727;
+    --color-primary: #e08a63;
+    --color-primary-hover: #e89b78;
+    --color-primary-dark: #c2694a;
 
-    --color-blue: #315d82;
-    --color-blue-hover: #274c6c;
+    --color-blue: #cf9a76;
+    --color-blue-hover: #e0b08c;
 
-    --color-success: #2e7d46;
-    --color-warning: #b8860b;
+    --color-nav-active: #4fa98f;
+    --color-nav-active-hover: #5fbc9f;
+    --color-nav-active-dark: #3c8570;
 
-    --color-dark-gray: #45494e;
+    --color-background: #1c1917;
+    --color-surface: #262220;
+    --color-surface-alt: #2f2a26;
 
-    --color-background: #e9e9e9;
-    --color-surface: #ffffff;
-    --color-surface-alt: #f6f8fa;
+    --color-border: #3d3630;
+    --color-border-dark: #4a423a;
 
-    --color-border: #c8d0d8;
-    --color-border-dark: #aeb8c2;
-
-    --color-text: #26323d;
-    --color-text-strong: #161a1e;
-    --color-text-light: #63717e;
-    --color-text-muted: #5c6670;
-
-    --color-header-bg: var(--color-dark-gray);
-    --color-header-text: #f5f5f5;
-    --color-header-subtext: #dcdfe2;
+    --color-text: #ece6dc;
+    --color-text-light: #b8ac9c;
+    --color-text-muted: #8c8175;
 
     /* Effects */
 
     --shadow-small:
-        0 1px 2px rgba(0, 0, 0, 0.12);
+        0 1px 2px rgba(0, 0, 0, 0.35);
 
     --shadow-medium:
-        0 2px 5px rgba(0, 0, 0, 0.14);
+        0 2px 6px rgba(0, 0, 0, 0.45);
 
     --shadow-raised:
-        0 2px 4px rgba(0, 0, 0, 0.18);
+        0 3px 8px rgba(0, 0, 0, 0.5);
 
     --shadow-inset:
-        inset 0 1px 3px rgba(0, 0, 0, 0.10);
+        inset 0 1px 3px rgba(0, 0, 0, 0.35);
 
     /* Layout */
 
@@ -165,9 +159,9 @@ p {
 
 .site-header {
 
-    background: var(--color-header-bg);
+    background: var(--color-surface);
 
-    border-bottom: 1px solid #2e3236;
+    border-bottom: 1px solid var(--color-border);
 
     padding: 18px 24px 14px;
 
@@ -182,7 +176,7 @@ p {
 
     align-items: center;
 
-    gap: 16px;
+    gap: 18px;
 
     max-width: var(--content-width);
 
@@ -193,13 +187,11 @@ p {
 
 .site-logo {
 
-    width: 48px;
-
-    height: 48px;
-
     flex-shrink: 0;
 
-    border-radius: var(--radius-medium);
+    width: 96px;
+
+    height: 96px;
 
 }
 
@@ -213,7 +205,7 @@ p {
 
 .site-title {
 
-    color: var(--color-header-text);
+    color: #f5f2ea;
 
     font-size: 1.65rem;
 
@@ -228,7 +220,7 @@ p {
 
     margin: 3px 0 0;
 
-    color: var(--color-header-subtext);
+    color: var(--color-text-light);
 
     font-size: 0.9rem;
 
@@ -280,8 +272,8 @@ p {
 
     background:
         linear-gradient(
-            #ffffff,
-            #e7ebef
+            #332d28,
+            #211d1a
         );
 
     color: var(--color-text);
@@ -293,8 +285,8 @@ p {
     text-decoration: none;
 
     box-shadow:
-        0 -1px 2px rgba(255,255,255,0.8),
-        0 1px 2px rgba(0,0,0,0.10);
+        0 -1px 2px rgba(255,255,255,0.05),
+        0 1px 2px rgba(0,0,0,0.30);
 
     transition:
         background 0.15s ease,
@@ -311,15 +303,15 @@ p {
 
     background:
         linear-gradient(
-            #ffffff,
-            #dce3e9
+            #3d352e,
+            #29231f
         );
 
     color: var(--color-primary);
 
     box-shadow:
-        0 -1px 2px rgba(255,255,255,0.9),
-        0 2px 3px rgba(0,0,0,0.14);
+        0 -1px 2px rgba(255,255,255,0.08),
+        0 2px 3px rgba(0,0,0,0.35);
 
 }
 
@@ -337,23 +329,23 @@ p {
 
 .nav-tab.active {
 
-    background: var(--color-primary);
+    background: var(--color-nav-active);
 
-    border-color: var(--color-primary-dark);
+    border-color: var(--color-nav-active-dark);
 
-    color: #ffffff;
+    color: #1c1917;
 
     box-shadow:
-        0 2px 4px rgba(0,0,0,0.18);
+        0 2px 4px rgba(0,0,0,0.4);
 
 }
 
 
 .nav-tab.active:hover {
 
-    background: var(--color-primary-hover);
+    background: var(--color-nav-active-hover);
 
-    color: #ffffff;
+    color: #1c1917;
 
 }
 
@@ -383,22 +375,12 @@ p {
 
     margin-bottom: 20px;
 
-    padding: 18px 22px;
-
-    background: var(--color-surface);
-
-    border: 1px solid var(--color-border-dark);
-
-    border-radius: var(--radius-medium);
-
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
-
 }
 
 
 .page-introduction p {
 
-    color: var(--color-text-strong);
+    color: var(--color-text-light);
 
 }
 
@@ -444,17 +426,6 @@ p {
 }
 
 
-/* Dropdown/input columns inside a .row (e.g. the counter picker's
-   opponent selectors) get a fixed width instead of shrink-wrapping,
-   wide enough to fit a 10-character option like "Anomalous". */
-
-.row .form-group {
-
-    flex: 0 0 150px;
-
-}
-
-
 .form-group label {
 
     display: block;
@@ -490,7 +461,7 @@ input[type="password"] {
 
     border-radius: var(--radius-small);
 
-    background: #ffffff;
+    background: var(--color-surface);
 
     color: var(--color-text);
 
@@ -522,7 +493,7 @@ input:focus {
 
     box-shadow:
         inset 0 1px 3px rgba(0,0,0,0.08),
-        0 0 0 2px rgba(179,58,58,0.15);
+        0 0 0 2px rgba(224,138,99,0.15);
 
 }
 
@@ -533,7 +504,7 @@ input:focus {
 
 select {
 
-    width: 50%;
+    width: 100%;
 
     max-width: 500px;
 
@@ -543,7 +514,7 @@ select {
 
     border-radius: var(--radius-small);
 
-    background: #ffffff;
+    background: var(--color-surface);
 
     color: var(--color-text);
 
@@ -573,7 +544,7 @@ select:focus {
 
     box-shadow:
         var(--shadow-inset),
-        0 0 0 2px rgba(179,58,58,0.15);
+        0 0 0 2px rgba(224,138,99,0.15);
 
 }
 
@@ -588,17 +559,17 @@ select:focus {
 
     padding: 9px 18px;
 
-    border: 1px solid var(--color-primary-dark);
+    border: 1px solid var(--color-nav-active-dark);
 
-    border-radius: var(--radius-small);
+    border-radius: var(--radius-large);
 
     background:
         linear-gradient(
-            #c94a4a,
-            #a93535
+            #6bc0a9,
+            #4fa98f
         );
 
-    color: #ffffff;
+    color: #1c1917;
 
     font-family: inherit;
 
@@ -624,12 +595,12 @@ select:focus {
 
     background:
         linear-gradient(
-            #d45555,
-            #b23b3b
+            #7ecdb4,
+            #5fbc9f
         );
 
     box-shadow:
-        0 3px 5px rgba(0,0,0,0.20),
+        0 3px 5px rgba(0,0,0,0.40),
         inset 0 1px 0 rgba(255,255,255,0.25);
 
 }
@@ -654,8 +625,8 @@ select:focus {
 
     background:
         linear-gradient(
-            #ffffff,
-            #e2e7eb
+            #332d28,
+            #211d1a
         );
 
     border-color: var(--color-border-dark);
@@ -669,11 +640,11 @@ select:focus {
 
     background:
         linear-gradient(
-            #ffffff,
-            #d5dde3
+            #3d352e,
+            #29231f
         );
 
-    color: var(--color-primary);
+    color: var(--color-nav-active);
 
 }
 
@@ -699,7 +670,7 @@ table {
 
     border-spacing: 0;
 
-    background: #ffffff;
+    background: var(--color-surface);
 
     border: 1px solid var(--color-border);
 
@@ -714,7 +685,7 @@ th {
 
     padding: 10px 12px;
 
-    background: #e7edf2;
+    background: var(--color-surface-alt);
 
     border-bottom: 1px solid var(--color-border);
 
@@ -733,7 +704,7 @@ td {
 
     padding: 9px 12px;
 
-    border-bottom: 1px solid #e2e6ea;
+    border-bottom: 1px solid var(--color-border);
 
     color: var(--color-text);
 
@@ -742,16 +713,9 @@ td {
 }
 
 
-tbody tr:nth-child(even) {
-
-    background: var(--color-surface-alt);
-
-}
-
-
 tbody tr:hover {
 
-    background: #f5f7f9;
+    background: #2a2521;
 
 }
 
@@ -763,10 +727,14 @@ tbody tr:last-child td {
 }
 
 
+/* Affinity reference table — click a name to highlight every matching cell */
+
 #affinityRefTable td,
 #affinityRefTable th {
 
     cursor: pointer;
+
+    transition: background 0.12s ease, color 0.12s ease;
 
 }
 
@@ -775,9 +743,9 @@ tbody tr:last-child td {
 
     background: var(--color-primary);
 
-    color: #ffffff;
+    color: #1c1917;
 
-    font-weight: 700;
+    font-weight: 600;
 
 }
 
@@ -863,8 +831,6 @@ a:hover {
 
     color: var(--color-text-muted);
 
-    font-style: italic;
-
 }
 
 
@@ -876,7 +842,7 @@ a:hover {
 
     border-left: 4px solid var(--color-primary);
 
-    background: #f7eeee;
+    background: #33241c;
 
 }
 
@@ -904,11 +870,18 @@ a:hover {
     }
 
 
+    .site-header-inner {
+
+        gap: 12px;
+
+    }
+
+
     .site-logo {
 
-        width: 36px;
+        width: 56px;
 
-        height: 36px;
+        height: 56px;
 
     }
 
@@ -964,124 +937,529 @@ a:hover {
 
 
 /* ============================================================
-   19. TAGS / MATCHUP BADGES
+   END OF XENO ARENA STYLES
+  ============================================================*/ 
+
+
+/* ============================================================
+   19. GLYPH DISPLAY (dark tiles — glyph PNGs are white-on-
+   transparent, so they need a dark background to read).
+   Extends the XENO ARENA token system above.
    ============================================================ */
 
-.tag {
-
-    display: inline-block;
-
-    padding: 3px 10px;
-
-    border-radius: 20px;
-
-    font-size: 0.78rem;
-
-    font-weight: 600;
-
-}
-
-
-.tag.good {
-
-    background: rgba(46, 125, 70, 0.12);
-
-    color: var(--color-success);
-
-}
-
-
-.tag.ok {
-
-    background: rgba(49, 93, 130, 0.12);
-
-    color: var(--color-blue);
-
-}
-
-
-.tag.warn {
-
-    background: rgba(184, 134, 11, 0.14);
-
-    color: var(--color-warning);
-
-}
-
-
-.tag.bad {
-
-    background: rgba(179, 58, 58, 0.12);
-
-    color: var(--color-primary);
-
+:root {
+    --color-glyph-bg: #12100e;
+    --color-glyph-bg-hover: #1c1815;
+    --color-glyph-bg-active: var(--color-primary);
+    --color-glyph-border: var(--color-border);
 }
 
 
 /* ============================================================
-   20. PET SLOT (counter-picker result row)
+   20. PORTAL GLYPH BUILDER (the box above the table)
    ============================================================ */
 
-.pet-slot {
+.glyph-builder {
+
+    background: var(--color-glyph-bg);
+
+    border: 1px solid var(--color-glyph-border);
+
+    border-radius: var(--radius-medium);
+
+    padding: 18px;
+
+    box-shadow: var(--shadow-inset);
+
+}
+
+
+.glyph-builder h2 {
+
+    color: #ffffff;
+
+    border-bottom: 1px solid var(--color-glyph-border);
+
+}
+
+
+.glyph-builder-slots {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-bottom: 14px;
+
+}
+
+
+.glyph-slot {
+
+    width: 40px;
+
+    height: 40px;
 
     display: flex;
 
     align-items: center;
 
-    justify-content: space-between;
+    justify-content: center;
 
-    flex-wrap: wrap;
+    background: #10161b;
 
-    gap: 10px;
-
-    padding: 10px 14px;
-
-    margin-bottom: 8px;
-
-    background: var(--color-surface-alt);
-
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-glyph-border);
 
     border-radius: var(--radius-small);
+
+    box-shadow: var(--shadow-inset);
 
 }
 
 
-.pet-slot-label {
+.glyph-slot img {
 
-    color: var(--color-text);
+    width: 30px;
 
-    font-size: 0.92rem;
+    height: 30px;
+
+}
+
+
+.glyph-slot.glyph-slot-current {
+
+    border-color: var(--color-primary);
+
+    box-shadow: 0 0 0 2px rgba(224,138,99,0.35);
+
+}
+
+
+.glyph-builder-code {
+
+    margin-bottom: 14px;
+
+    color: #ffffff;
+
+    font-family: "Courier New", monospace;
+
+    font-size: 1.1rem;
+
+    letter-spacing: 2px;
+
+}
+
+
+.glyph-builder-code .code-label {
+
+    margin-right: 8px;
+
+    color: var(--color-text-muted);
+
+    font-family: var(--font-family);
+
+    font-size: 0.8rem;
+
+    letter-spacing: normal;
+
+    text-transform: uppercase;
+
+}
+
+
+.glyph-palette {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-bottom: 14px;
+
+}
+
+
+.glyph-key {
+
+    width: 44px;
+
+    height: 44px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: var(--color-glyph-bg);
+
+    border: 1px solid var(--color-glyph-border);
+
+    border-radius: var(--radius-small);
+
+    cursor: pointer;
+
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        transform 0.08s ease;
+
+}
+
+
+.glyph-key img {
+
+    width: 32px;
+
+    height: 32px;
+
+}
+
+
+.glyph-key:hover {
+
+    background: var(--color-glyph-bg-hover);
+
+    border-color: var(--color-blue);
+
+}
+
+
+.glyph-key:active {
+
+    transform: translateY(1px);
+
+}
+
+
+.glyph-builder-actions {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
 
 }
 
 
 /* ============================================================
-   21. SECTION SUBTITLE / DIVIDER
+   21. TABLE-SPECIFIC FORM CONTROLS
+   Table cells are tighter than page-level form-groups.
    ============================================================ */
 
-.section-subtitle {
+.planet-table select,
+.planet-table input[type="text"] {
 
-    margin: -4px 0 14px;
+    max-width: none;
 
-    color: var(--color-dark-gray);
+    width: 100%;
+
+    padding: 6px 8px;
 
     font-size: 0.85rem;
 
 }
 
 
-.section-divider {
+.planet-table textarea {
 
-    border: none;
+    width: 100%;
 
-    border-top: 1px solid var(--color-border);
+    min-height: 38px;
 
-    margin: 26px 0;
+    padding: 6px 8px;
+
+    border: 1px solid var(--color-border-dark);
+
+    border-radius: var(--radius-small);
+
+    background: var(--color-surface);
+
+    color: var(--color-text);
+
+    font-family: inherit;
+
+    font-size: 0.85rem;
+
+    line-height: 1.4;
+
+    resize: vertical;
+
+    box-shadow: var(--shadow-inset);
+
+    overflow: hidden;
+
+}
+
+
+.planet-table textarea:focus {
+
+    outline: none;
+
+    border-color: var(--color-primary);
+
+    box-shadow:
+        inset 0 1px 3px rgba(0,0,0,0.08),
+        0 0 0 2px rgba(224,138,99,0.15);
+
+}
+
+
+.planet-table .word-count {
+
+    margin-top: 3px;
+
+    font-size: 0.72rem;
+
+    color: var(--color-text-muted);
+
+    text-align: right;
+
+}
+
+
+.planet-table .word-count.word-count-over {
+
+    color: var(--color-primary);
+
+    font-weight: 600;
+
+}
+
+
+.planet-table td.col-checkbox {
+
+    text-align: center;
+
+}
+
+
+.planet-table input[type="checkbox"] {
+
+    width: 18px;
+
+    height: 18px;
+
+    cursor: pointer;
+
+}
+
+
+.planet-table td.col-actions {
+
+    white-space: nowrap;
+
+    text-align: right;
+
+}
+
+
+.icon-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 28px;
+
+    height: 28px;
+
+    padding: 0;
+
+    margin-left: 4px;
+
+    border: 1px solid var(--color-border-dark);
+
+    border-radius: var(--radius-small);
+
+    background: var(--color-surface);
+
+    color: var(--color-text-light);
+
+    font-size: 0.9rem;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition: background 0.12s ease, color 0.12s ease;
+
+}
+
+
+.icon-button:hover {
+
+    background: var(--color-surface-alt);
+
+    color: var(--color-primary);
+
+}
+
+
+.icon-button.icon-button-danger:hover {
+
+    color: var(--color-primary);
+
+    border-color: var(--color-primary);
+
+}
+
+
+/* Address validity states */
+
+.address-input.address-invalid {
+
+    border-color: var(--color-primary);
+
+}
+
+
+/* Toolbar above the table */
+
+.table-toolbar {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+
+}
+
+
+.table-toolbar .toolbar-group {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    align-items: center;
+
+}
+
+
+.storage-status {
+
+    font-size: 0.78rem;
+
+    color: var(--color-text-muted);
+
+}
+
+
+.storage-status.storage-status-unsaved {
+
+    color: var(--color-primary);
+
+    font-weight: 600;
+
+}
+
+
+/* Per-row Save button + its inline status message */
+
+.row-save-cell {
+
+    white-space: nowrap;
+
+}
+
+
+.row-save-status {
+
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 0.7rem;
+
+    color: var(--color-text-muted);
+
+    min-height: 1em;
+
+}
+
+
+.row-save-status.row-save-status-ok {
+
+    color: #5cb86c;
+
+}
+
+
+.row-save-status.row-save-status-warn {
+
+    color: var(--color-primary);
+
+}
+
+
+/* Empty state */
+
+.empty-table-row td {
+
+    padding: 30px 12px;
+
+    color: var(--color-text-muted);
+
+    text-align: center;
+
+    font-style: italic;
+
+}
+
+
+@media (max-width: 700px) {
+
+    .glyph-slot {
+
+        width: 32px;
+
+        height: 32px;
+
+    }
+
+    .glyph-slot img {
+
+        width: 24px;
+
+        height: 24px;
+
+    }
+
+    .glyph-key {
+
+        width: 38px;
+
+        height: 38px;
+
+    }
+
+    .glyph-key img {
+
+        width: 28px;
+
+        height: 28px;
+
+    }
 
 }
 
 
 /* ============================================================
-   END OF XENO ARENA STYLES
+   END OF XENO ARENA — PLANET TRACKER EXTENSIONS
    ============================================================ */
