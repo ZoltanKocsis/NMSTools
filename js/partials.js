@@ -1,6 +1,8 @@
 // Shared site header + navigation, injected into every page so the markup
 // only has to live in one place. Runs as a plain <script src> (no fetch())
 // so pages keep working when opened directly from disk.
+//
+// Analytics/consent banner logic lives in js/consent.js.
 (function () {
 
     var SITE_HEADER_HTML =

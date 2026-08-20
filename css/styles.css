@@ -792,6 +792,80 @@ a:hover {
 
 
 /* ============================================================
+   16b. ANALYTICS CONSENT BANNER
+   ============================================================ */
+
+.consent-banner {
+
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 1000;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 12px 20px;
+
+    padding: 10px 20px;
+
+    background: var(--color-surface);
+
+    border-top: 1px solid var(--color-border);
+
+    box-shadow: var(--shadow-medium);
+
+}
+
+
+.consent-banner-text {
+
+    margin: 0;
+
+    color: var(--color-text-light);
+
+    font-size: 0.85rem;
+
+}
+
+
+.consent-banner-dismiss {
+
+    flex-shrink: 0;
+
+    padding: 6px 16px;
+
+    border: 1px solid var(--color-border-dark);
+
+    border-radius: var(--radius-small);
+
+    background: var(--color-nav-active);
+
+    color: var(--color-text);
+
+    font-size: 0.85rem;
+
+    cursor: pointer;
+
+}
+
+
+.consent-banner-dismiss:hover {
+
+    background: var(--color-nav-active-hover);
+
+}
+
+
+/* ============================================================
    17. UTILITY CLASSES
    ============================================================ */
 
