@@ -618,6 +618,43 @@ select:focus {
 
 
 /* ============================================================
+   12b. QUICK-NAV LINKS
+   ============================================================ */
+
+.quick-nav {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px 24px;
+
+    margin: 4px 0 16px;
+
+}
+
+
+.quick-nav-link {
+
+    color: var(--color-nav-active);
+
+    font-weight: 700;
+
+    text-decoration: none;
+
+}
+
+
+.quick-nav-link:hover {
+
+    color: var(--color-nav-active-hover);
+
+    text-decoration: underline;
+
+}
+
+
+/* ============================================================
    13. SECONDARY BUTTON
    ============================================================ */
 
