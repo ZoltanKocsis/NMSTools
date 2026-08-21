@@ -20,7 +20,7 @@
         { href: 'index.html', label: 'Home' },
         { href: 'xeno_arena_counter_picker.html', label: 'Xeno Arena Counter Calculator' },
         { href: 'pets_trait_triangle.html', label: 'Pets Trait Triangle' },
-       // { href: 'visited_planets.html', label: 'Visited Planets' },
+        { href: 'visited_planets.html', label: 'Visited Planets' },
         { href: 'about.html', label: 'About' }
     ];
 

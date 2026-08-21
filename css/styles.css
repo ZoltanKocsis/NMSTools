@@ -1320,40 +1320,112 @@ a:hover {
 }
 
 
-.planet-table .word-count {
+.planet-table select:disabled,
+.planet-table input:disabled,
+.planet-table textarea:disabled {
 
-    margin-top: 3px;
+    opacity: 0.72;
 
-    font-size: 0.72rem;
-
-    color: var(--color-text-muted);
-
-    text-align: right;
+    cursor: default;
 
 }
 
 
-.planet-table .word-count.word-count-over {
+.planet-table td.col-glyphs {
 
-    color: var(--color-primary);
-
-    font-weight: 600;
+    vertical-align: middle;
 
 }
 
 
-.planet-table td.col-checkbox {
+.row-glyphs {
+
+    display: flex;
+
+    flex-wrap: nowrap;
+
+    align-items: center;
+
+    gap: 2px;
+
+    overflow-x: auto;
+
+}
+
+
+.row-glyphs img {
+
+    height: 22px;
+
+    width: 22px;
+
+    flex: 0 0 auto;
+
+}
+
+
+.planet-table td.col-priority {
 
     text-align: center;
 
 }
 
 
-.planet-table input[type="checkbox"] {
+.planet-table select.row-priority {
 
-    width: 18px;
+    width: auto;
 
-    height: 18px;
+    min-width: 0;
+
+    padding: 6px 4px;
+
+    text-align: center;
+
+    text-align-last: center;
+
+}
+
+
+.sort-toolbar {
+
+    justify-content: flex-start;
+
+    gap: 6px;
+
+    margin-top: -6px;
+
+    font-size: 0.85rem;
+
+    color: var(--color-text-muted);
+
+}
+
+
+.sort-toolbar .sort-label {
+
+    margin-right: 2px;
+
+    font-weight: 600;
+
+    color: var(--color-text);
+
+}
+
+
+.sort-option {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 4px;
+
+    cursor: pointer;
+
+}
+
+
+.sort-option input {
 
     cursor: pointer;
 
@@ -1416,15 +1488,6 @@ a:hover {
 .icon-button.icon-button-danger:hover {
 
     color: var(--color-primary);
-
-    border-color: var(--color-primary);
-
-}
-
-
-/* Address validity states */
-
-.address-input.address-invalid {
 
     border-color: var(--color-primary);
 

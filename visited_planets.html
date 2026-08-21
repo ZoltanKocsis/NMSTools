@@ -41,10 +41,9 @@
             <h1>Visited Planets</h1>
 
             <p>
-                Build a portal address by clicking glyphs below, or add a blank row
-                and type an address directly into the table. Each row has its own
-                Save button — it writes the whole table out to a CSV file on your
-                computer.
+                A personal log of the planets you've visited in No Man's Sky —
+                galaxy, portal address, biome, priority, and notes for each one,
+                stored locally in a CSV file on your machine.
             </p>
 
         </section>
@@ -84,14 +83,33 @@
             <div class="table-toolbar">
 
                 <div class="toolbar-group">
-                    <button type="button" id="add-row-btn" class="button">+ Add row</button>
-                    <button type="button" id="choose-file-btn" class="button secondary">Choose save file…</button>
-                    <button type="button" id="clear-all-btn" class="button secondary">Clear all</button>
+                    <button type="button" id="connect-file-btn" class="button secondary" style="display:none">Connect visitedplanets.csv</button>
                 </div>
 
                 <div class="toolbar-group">
                     <span id="file-status" class="storage-status"></span>
                 </div>
+
+            </div>
+
+            <div class="table-toolbar sort-toolbar">
+
+                <span class="sort-label">Sort by:</span>
+
+                <label class="sort-option">
+                    <input type="radio" name="sort-mode" id="sort-time" checked>
+                    Time-registered
+                </label>
+
+                <label class="sort-option">
+                    <input type="radio" name="sort-mode" id="sort-priority">
+                    Priority
+                </label>
+
+                <label class="sort-option">
+                    <input type="radio" name="sort-mode" id="sort-biome">
+                    Biome
+                </label>
 
             </div>
 
@@ -101,13 +119,12 @@
 
                     <thead>
                         <tr>
-                            <th style="width:16%">Galaxy</th>
-                            <th style="width:14%">Portal Address</th>
-                            <th style="width:16%">Main Biome</th>
-                            <th style="width:7%">Outlaw</th>
-                            <th style="width:8%">Dissonant</th>
-                            <th style="width:27%">Notes</th>
-                            <th style="width:12%">Save</th>
+                            <th style="width:5%">Priority</th>
+                            <th style="width:14%">Galaxy</th>
+                            <th style="width:28%">Portal Glyphs</th>
+                            <th style="width:14%">Main Biome</th>
+                            <th style="width:29%">Notes</th>
+                            <th style="width:10%">Actions</th>
                         </tr>
                     </thead>
 
@@ -120,36 +137,6 @@
 
         </section>
 
-
-        <!-- =====================================================
-             ABOUT
-             ===================================================== -->
-
-        <section class="content-panel text-small text-muted">
-
-            <h3>About this tool</h3>
-
-            <p>
-                A portal address is 12 hex glyphs:
-                <strong>Planet Index (1) + Solar System Index (3) + Y (2) + Z (3) + X (3)</strong>.
-                The galaxy itself is not part of the address — portals only connect
-                within their own galaxy — which is why Galaxy is its own column here.
-            </p>
-
-            <p>
-                Named galaxies 1–50 and the biome descriptor list live at the top of
-                <code>js/visited_planets.js</code> — edit those arrays directly to add
-                more galaxies or swap in your own curated biome names.
-            </p>
-
-            <p>
-                Each row's Save button writes the entire table to one CSV file.
-                In Chrome or Edge, use "Choose save file…" once and every Save after
-                that overwrites the same file directly. In other browsers, Save
-                downloads a fresh CSV each time.
-            </p>
-
-        </section>
 
     </main>
 
