@@ -1,165 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-
-    <!-- Responsive layout -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Page title shown in the browser tab -->
-    <title>Visited Planets — NMS tools and knowledge base fun project</title>
-
-    <!-- Main stylesheet -->
-    <link rel="stylesheet" href="css/styles.css">
-
-    <!-- Optional favicon -->
-    <link rel="icon" href="images/favicon-96x96.png">
-
-    <!-- Shared header + navigation (see js/partials.js) -->
-    <script src="js/partials.js"></script>
-
-    <!-- Google Analytics + GDPR consent notice (see js/consent.js) -->
-    <script src="js/consent.js"></script>
+<meta charset="UTF-8">
+<!-- Responsive layout -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Page title shown in the browser tab -->
+<title>Visited Planets — NMS tools and knowledge base fun project</title>
+<!-- Main stylesheet -->
+<link rel="stylesheet" href="css/styles.css">
+<!-- Optional favicon -->
+<link rel="icon" href="images/favicon-96x96.png">
+<!-- Shared header + navigation (see js/partials.js) -->
+<script src="js/partials.js"></script>
+<!-- Google Analytics + GDPR consent notice (see js/consent.js) -->
+<script src="js/consent.js"></script>
+<!-- Firebase (Google Sign-In + Firestore) — must load before js/visited_planets.js -->
+<script type="module" src="js/firebase-init.js"></script>
 </head>
+<body class="signed-out">
 
+<!-- Header + navigation are injected here by js/partials.js -->
+<div id="site-chrome"></div>
 
-<body>
+<!-- =========================================================
+     SIGN-IN GATE — shown until Google sign-in completes, hides
+     the rest of the page via the body.signed-out CSS rule
+     ========================================================= -->
+<div id="auth-gate" class="auth-gate">
+  <div class="auth-gate-box">
+    <h2>Sign in to continue</h2>
+    <p>Visited Planets is synced through your Google account, so your log follows you to any device.</p>
+    <button type="button" id="google-signin-btn" class="button">Sign in with Google</button>
+    <p id="auth-gate-error" class="auth-gate-error"></p>
+  </div>
+</div>
 
-    <!-- Header + navigation are injected here by js/partials.js -->
-    <div id="site-chrome"></div>
+<!-- =========================================================
+     MAIN PAGE CONTENT
+     ========================================================= -->
+<main class="page-container">
 
+  <section class="page-introduction">
+    <h1>Visited Planets</h1>
+    <p>
+      A shared log of the planets explorers have visited in No Man's Sky —
+      galaxy, portal address, biome, priority, and notes for each one,
+      synced through your Google account.
+    </p>
+  </section>
 
-    <!-- =========================================================
-         MAIN PAGE CONTENT
-         ========================================================= -->
+  <!-- =====================================================
+       PROFILE PANEL — nickname shown here, editable once
+       ===================================================== -->
+  <section class="content-panel profile-panel" id="profile-panel">
+    <div class="profile-row">
+      <span>Signed in as <strong id="profile-nickname">—</strong></span>
+      <button type="button" id="edit-nickname-btn" class="button secondary">Change nickname (one time)</button>
+      <button type="button" id="sign-out-btn" class="button secondary">Sign out</button>
+    </div>
+    <div id="nickname-edit-row" class="nickname-edit-row" style="display:none">
+      <input type="text" id="nickname-input" maxlength="24" placeholder="Pick a nickname">
+      <button type="button" id="save-nickname-btn" class="button">Save</button>
+      <button type="button" id="cancel-nickname-btn" class="button secondary">Cancel</button>
+      <span id="nickname-status" class="storage-status"></span>
+    </div>
+  </section>
 
-    <main class="page-container">
+  <!-- =====================================================
+       PORTAL GLYPH BUILDER
+       ===================================================== -->
+  <section class="content-panel glyph-builder">
+    <h2>Portal Glyph Builder</h2>
+    <div id="builder-slots" class="glyph-builder-slots"></div>
+    <div id="builder-code" class="glyph-builder-code"></div>
+    <div id="glyph-palette" class="glyph-palette"></div>
+    <div class="glyph-builder-actions">
+      <button type="button" id="builder-backspace" class="button secondary">← Backspace</button>
+      <button type="button" id="builder-clear" class="button secondary">Clear</button>
+      <button type="button" id="builder-add-row" class="button" disabled>Add as new row</button>
+    </div>
+  </section>
 
-        <section class="page-introduction">
+  <!-- =====================================================
+       VISITED PLANETS TABLE
+       ===================================================== -->
+  <section class="content-panel">
+    <h2>Visited Planets</h2>
 
-            <h1>Visited Planets</h1>
+    <div class="table-toolbar view-toolbar">
+      <div class="toolbar-group view-toggle" role="group" aria-label="Show entries">
+        <button type="button" id="view-mine-btn" class="button toggle-btn toggle-btn-active">My Registered</button>
+        <button type="button" id="view-all-btn" class="button secondary toggle-btn">All Registered</button>
+      </div>
+    </div>
 
-            <p>
-                A personal log of the planets you've visited in No Man's Sky —
-                galaxy, portal address, biome, priority, and notes for each one,
-                stored locally in a CSV file on your machine.
-            </p>
+    <div class="table-toolbar">
+      <div class="toolbar-group">
+        <button type="button" id="import-csv-btn" class="button secondary">Import old visitedplanets.csv (one-time)</button>
+      </div>
+      <div class="toolbar-group">
+        <span id="file-status" class="storage-status"></span>
+      </div>
+    </div>
 
-        </section>
+    <div class="table-toolbar sort-toolbar">
+      <span class="sort-label">Sort by:</span>
+      <label class="sort-option">
+        <input type="radio" name="sort-mode" id="sort-time" checked>
+        Time-registered
+      </label>
+      <label class="sort-option">
+        <input type="radio" name="sort-mode" id="sort-priority">
+        Priority
+      </label>
+      <label class="sort-option">
+        <input type="radio" name="sort-mode" id="sort-biome">
+        Biome
+      </label>
+    </div>
 
+    <div class="table-container">
+      <table class="planet-table mode-mine">
+        <thead>
+          <tr>
+            <th style="width:5%">Priority</th>
+            <th style="width:12%">Galaxy</th>
+            <th style="width:23%">Portal Glyphs</th>
+            <th style="width:11%">Main Biome</th>
+            <th style="width:9%" class="col-owner">By</th>
+            <th style="width:10%" class="col-registered">Registered</th>
+            <th style="width:22%">Notes</th>
+            <th style="width:8%">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="planet-tbody">
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-        <!-- =====================================================
-             PORTAL GLYPH BUILDER
-             ===================================================== -->
+</main>
 
-        <section class="content-panel glyph-builder">
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+<footer class="site-footer">
+  <p>
+    balbla footer
+  </p>
+</footer>
 
-            <h2>Portal Glyph Builder</h2>
-
-            <div id="builder-slots" class="glyph-builder-slots"></div>
-
-            <div id="builder-code" class="glyph-builder-code"></div>
-
-            <div id="glyph-palette" class="glyph-palette"></div>
-
-            <div class="glyph-builder-actions">
-                <button type="button" id="builder-backspace" class="button secondary">← Backspace</button>
-                <button type="button" id="builder-clear" class="button secondary">Clear</button>
-                <button type="button" id="builder-add-row" class="button" disabled>Add as new row</button>
-            </div>
-
-        </section>
-
-
-        <!-- =====================================================
-             VISITED PLANETS TABLE
-             ===================================================== -->
-
-        <section class="content-panel">
-
-            <h2>Visited Planets</h2>
-
-            <div class="table-toolbar">
-
-                <div class="toolbar-group">
-                    <button type="button" id="connect-file-btn" class="button secondary" style="display:none">Connect visitedplanets.csv</button>
-                </div>
-
-                <div class="toolbar-group">
-                    <span id="file-status" class="storage-status"></span>
-                </div>
-
-            </div>
-
-            <div class="table-toolbar sort-toolbar">
-
-                <span class="sort-label">Sort by:</span>
-
-                <label class="sort-option">
-                    <input type="radio" name="sort-mode" id="sort-time" checked>
-                    Time-registered
-                </label>
-
-                <label class="sort-option">
-                    <input type="radio" name="sort-mode" id="sort-priority">
-                    Priority
-                </label>
-
-                <label class="sort-option">
-                    <input type="radio" name="sort-mode" id="sort-biome">
-                    Biome
-                </label>
-
-            </div>
-
-            <div class="table-container">
-
-                <table class="planet-table">
-
-                    <thead>
-                        <tr>
-                            <th style="width:5%">Priority</th>
-                            <th style="width:14%">Galaxy</th>
-                            <th style="width:28%">Portal Glyphs</th>
-                            <th style="width:14%">Main Biome</th>
-                            <th style="width:29%">Notes</th>
-                            <th style="width:10%">Actions</th>
-                        </tr>
-                    </thead>
-
-                    <tbody id="planet-tbody">
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </section>
-
-
-    </main>
-
-
-    <!-- =========================================================
-         FOOTER
-         ========================================================= -->
-
-    <footer class="site-footer">
-
-        <p>
-           balbla footer
-        </p>
-
-    </footer>
-
-
-    <!-- =========================================================
-         JAVASCRIPT
-         ========================================================= -->
-
-    <script src="js/visited_planets.js"></script>
-
+<!-- =========================================================
+     JAVASCRIPT
+     ========================================================= -->
+<script src="js/visited_planets.js"></script>
 </body>
-
 </html>

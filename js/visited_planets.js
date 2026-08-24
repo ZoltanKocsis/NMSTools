@@ -5,8 +5,10 @@
    Single file containing:
      1. GALAXIES data
      2. BIOMES data
-     3. Glyph builder + table app logic
-     4. CSV load/save (File System Access API)
+     3. Auth / profile / nickname wiring (talks to window.NMSFirebase,
+        set up by js/firebase-init.js)
+     4. Glyph builder + table app logic (Firestore-backed)
+     5. Legacy CSV import (one-time, via File System Access API)
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -181,7 +183,7 @@ const BIOMES = [
 ];
 
 /* ------------------------------------------------------------
-   3. APP LOGIC
+   3. APP STATE
    ------------------------------------------------------------ */
 
 const GLYPH_CHARS = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
@@ -189,371 +191,401 @@ const ADDRESS_LENGTH = 12;
 const GLYPH_IMG_DIR = 'images/glyphs/';
 const PRIORITY_OPTIONS = ['1', '2', '3', '4', '5'];
 const CSV_SUGGESTED_NAME = 'visitedplanets.csv';
-const HANDLE_DB_NAME = 'VisitedPlanetsDB';
-const HANDLE_DB_STORE = 'handles';
-const HANDLE_DB_KEY = 'csvFileHandle';
 
-let rows = [];            // array of row objects — the linked CSV file is the source of truth
-let builderDigits = [];   // digits currently in the glyph builder
-let csvFileHandle = null; // File System Access API handle, once linked
-let sortMode = 'time';    // 'time' | 'priority' | 'biome' — display order only
+let rows = [];              // current Firestore rows for the active view
+let builderDigits = [];     // digits currently in the glyph builder
+let sortMode = 'time';      // 'time' | 'priority' | 'biome' — display order only
+let viewMode = 'mine';      // 'mine' | 'all'
+let currentUser = null;     // Firebase Auth user, once signed in
+let currentNickname = '';
+let unsubscribePlanets = null;
+let editingIds = new Set(); // row ids currently unlocked for editing (owner only)
 
-function makeId() {
-    return 'row_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-}
-
-function makeEmptyRow(address) {
-    return {
-        id: makeId(),
-        priority: '1',
-        galaxy: GALAXIES.length ? String(GALAXIES[0].index) : '',
-        address: address || '',
-        biome: BIOMES.length ? BIOMES[0].label : '',
-        notes: '',
-        dateAdded: new Date().toISOString(),
-        locked: false,   // unlocked rows render as directly editable
-        everSaved: false // true once this row has been written to the linked file at least once
-    };
-}
-
-/* ---------------- Linked file handle storage (IndexedDB) ----
-   The browser can't silently touch an arbitrary local file, so
-   the first time you use this page you pick data/visitedplanets.csv
-   once via the Connect button. The resulting file handle is kept
-   in IndexedDB so future visits can read/write it without any
-   picker, as long as the browser still remembers the permission
-   grant (it may need re-granting after a browser restart).
+/* ------------------------------------------------------------
+   4. AUTH / PROFILE
    ------------------------------------------------------------ */
 
-function openHandleDb() {
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open(HANDLE_DB_NAME, 1);
-        req.onupgradeneeded = () => {
-            req.result.createObjectStore(HANDLE_DB_STORE);
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-    });
+function setSignedOutUi() {
+  document.body.classList.add('signed-out');
+  document.getElementById('auth-gate-error').textContent = '';
 }
 
-async function getStoredHandle() {
-    try {
-        const db = await openHandleDb();
-        return await new Promise((resolve, reject) => {
-            const tx = db.transaction(HANDLE_DB_STORE, 'readonly');
-            const req = tx.objectStore(HANDLE_DB_STORE).get(HANDLE_DB_KEY);
-            req.onsuccess = () => resolve(req.result || null);
-            req.onerror = () => reject(req.error);
-        });
-    } catch (err) {
-        console.error('[visited planets] Failed to read stored file handle:', err);
-        return null;
-    }
+async function setSignedInUi(user) {
+  document.body.classList.remove('signed-out');
+  let profile;
+  try {
+    profile = await window.NMSFirebase.ensureUserDoc(user);
+  } catch (err) {
+    console.error('[visited planets] Could not set up profile:', err);
+    document.getElementById('auth-gate-error').textContent =
+      'Could not set up your profile — try reloading the page.';
+    document.body.classList.add('signed-out');
+    return;
+  }
+  currentUser = user;
+  currentNickname = profile.nickname;
+  document.getElementById('profile-nickname').textContent = currentNickname;
+  document.getElementById('edit-nickname-btn').style.display = profile.nicknameEdited ? 'none' : '';
+  startPlanetsSubscription();
 }
 
-async function setStoredHandle(handle) {
+function initAuthUi() {
+  document.getElementById('google-signin-btn').addEventListener('click', async () => {
+    document.getElementById('auth-gate-error').textContent = '';
     try {
-        const db = await openHandleDb();
-        await new Promise((resolve, reject) => {
-            const tx = db.transaction(HANDLE_DB_STORE, 'readwrite');
-            tx.objectStore(HANDLE_DB_STORE).put(handle, HANDLE_DB_KEY);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
+      await window.NMSFirebase.signIn();
     } catch (err) {
-        console.error('[visited planets] Failed to store file handle:', err);
+      console.error('[visited planets] Sign-in failed:', err);
+      document.getElementById('auth-gate-error').textContent = 'Sign-in failed — try again.';
     }
+  });
+
+  document.getElementById('sign-out-btn').addEventListener('click', () => {
+    window.NMSFirebase.signOut();
+  });
+
+  document.getElementById('edit-nickname-btn').addEventListener('click', () => {
+    document.getElementById('nickname-edit-row').style.display = '';
+    document.getElementById('nickname-input').value = currentNickname;
+    document.getElementById('nickname-input').focus();
+  });
+
+  document.getElementById('cancel-nickname-btn').addEventListener('click', () => {
+    document.getElementById('nickname-edit-row').style.display = 'none';
+    document.getElementById('nickname-status').textContent = '';
+  });
+
+  document.getElementById('save-nickname-btn').addEventListener('click', handleSaveNickname);
 }
 
-async function clearStoredHandle() {
-    try {
-        const db = await openHandleDb();
-        await new Promise((resolve, reject) => {
-            const tx = db.transaction(HANDLE_DB_STORE, 'readwrite');
-            tx.objectStore(HANDLE_DB_STORE).delete(HANDLE_DB_KEY);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
-    } catch (err) {
-        console.error('[visited planets] Failed to clear stored file handle:', err);
-    }
+async function handleSaveNickname() {
+  const input = document.getElementById('nickname-input');
+  const status = document.getElementById('nickname-status');
+  const saveBtn = document.getElementById('save-nickname-btn');
+  const val = input.value.trim();
+  if (!val) {
+    status.textContent = 'Enter a nickname.';
+    return;
+  }
+  saveBtn.disabled = true;
+  status.textContent = 'Saving…';
+  const result = await window.NMSFirebase.changeNickname(currentUser.uid, val);
+  saveBtn.disabled = false;
+  if (!result.ok) {
+    status.textContent = result.message; // e.g. "already taken — pick another"
+    return;
+  }
+  currentNickname = result.nickname;
+  document.getElementById('profile-nickname').textContent = currentNickname;
+  document.getElementById('nickname-edit-row').style.display = 'none';
+  document.getElementById('edit-nickname-btn').style.display = 'none';
+  status.textContent = '';
 }
 
-async function verifyPermission(handle, requestIfNeeded) {
-    const opts = { mode: 'readwrite' };
-    try {
-        if ((await handle.queryPermission(opts)) === 'granted') return true;
-    } catch (err) {
-        console.error('[visited planets] Permission query failed:', err);
-        return false;
-    }
-    if (!requestIfNeeded) return false;
-    try {
-        return (await handle.requestPermission(opts)) === 'granted';
-    } catch (err) {
-        console.error('[visited planets] Permission request failed:', err);
-        return false;
-    }
+/* ------------------------------------------------------------
+   5. VIEW TOGGLE (My Registered / All Registered)
+   ------------------------------------------------------------ */
+
+function initViewToggle() {
+  document.getElementById('view-mine-btn').addEventListener('click', () => setViewMode('mine'));
+  document.getElementById('view-all-btn').addEventListener('click', () => setViewMode('all'));
 }
 
-/* ---------------- Glyph helpers (builder box + read-only row glyphs) ---------------- */
+function setViewMode(mode) {
+  if (viewMode === mode) return;
+  viewMode = mode;
+  editingIds.clear();
+  document.getElementById('view-mine-btn').classList.toggle('toggle-btn-active', mode === 'mine');
+  document.getElementById('view-mine-btn').classList.toggle('secondary', mode !== 'mine');
+  document.getElementById('view-all-btn').classList.toggle('toggle-btn-active', mode === 'all');
+  document.getElementById('view-all-btn').classList.toggle('secondary', mode !== 'all');
+  const table = document.querySelector('.planet-table');
+  table.classList.toggle('mode-all', mode === 'all');
+  table.classList.toggle('mode-mine', mode === 'mine');
+  startPlanetsSubscription();
+}
+
+function startPlanetsSubscription() {
+  if (!currentUser) return;
+  if (unsubscribePlanets) unsubscribePlanets();
+  setFileStatus('Loading…');
+  unsubscribePlanets = window.NMSFirebase.subscribePlanets(currentUser.uid, viewMode, (fetchedRows, err) => {
+    if (err) {
+      setFileStatus('Could not load entries — check your connection.');
+      return;
+    }
+    rows = fetchedRows;
+    setFileStatus(rows.length + ' row' + (rows.length === 1 ? '' : 's') + ' loaded');
+    renderTable();
+  });
+}
+
+/* ------------------------------------------------------------
+   6. Glyph helpers (builder box + read-only row glyphs)
+   ------------------------------------------------------------ */
 
 function glyphImgSrc(char) {
-    return GLYPH_IMG_DIR + char.toUpperCase() + '.png';
+  return GLYPH_IMG_DIR + char.toUpperCase() + '.png';
 }
 
 function renderAddressGlyphs(container, address) {
-    container.innerHTML = '';
-    const chars = (address || '').toUpperCase().split('');
-    for (const ch of chars) {
-        if (!GLYPH_CHARS.includes(ch)) continue;
-        const img = document.createElement('img');
-        img.src = glyphImgSrc(ch);
-        img.alt = ch;
-        container.appendChild(img);
-    }
+  container.innerHTML = '';
+  const chars = (address || '').toUpperCase().split('');
+  for (const ch of chars) {
+    if (!GLYPH_CHARS.includes(ch)) continue;
+    const img = document.createElement('img');
+    img.src = glyphImgSrc(ch);
+    img.alt = ch;
+    container.appendChild(img);
+  }
 }
 
-/* ---------------- Dropdown builders ---------------- */
+/* ------------------------------------------------------------
+   7. Dropdown builders
+   ------------------------------------------------------------ */
 
 function buildPriorityOptions(selectEl, selectedValue) {
-    selectEl.innerHTML = '';
-    for (const p of PRIORITY_OPTIONS) {
-        const opt = document.createElement('option');
-        opt.value = p;
-        opt.textContent = p;
-        selectEl.appendChild(opt);
-    }
-    selectEl.value = selectedValue || '1';
+  selectEl.innerHTML = '';
+  for (const p of PRIORITY_OPTIONS) {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    selectEl.appendChild(opt);
+  }
+  selectEl.value = selectedValue || '1';
 }
 
 function buildGalaxyOptions(selectEl, selectedValue) {
-    selectEl.innerHTML = '';
-    for (const g of GALAXIES) {
-        const opt = document.createElement('option');
-        opt.value = String(g.index);
-        opt.textContent = g.index + ' — ' + g.name;
-        selectEl.appendChild(opt);
+  selectEl.innerHTML = '';
+  for (const g of GALAXIES) {
+    const opt = document.createElement('option');
+    opt.value = String(g.index);
+    opt.textContent = g.index + ' — ' + g.name;
+    selectEl.appendChild(opt);
+  }
+  if (selectedValue !== undefined && selectedValue !== null && selectedValue !== '') {
+    selectEl.value = String(selectedValue);
+    if (selectEl.value !== String(selectedValue)) {
+      const opt = document.createElement('option');
+      opt.value = String(selectedValue);
+      opt.textContent = selectedValue + ' — (unnamed)';
+      selectEl.appendChild(opt);
+      selectEl.value = String(selectedValue);
     }
-    if (selectedValue !== undefined && selectedValue !== null && selectedValue !== '') {
-        selectEl.value = String(selectedValue);
-        if (selectEl.value !== String(selectedValue)) {
-            const opt = document.createElement('option');
-            opt.value = String(selectedValue);
-            opt.textContent = selectedValue + ' — (unnamed)';
-            selectEl.appendChild(opt);
-            selectEl.value = String(selectedValue);
-        }
-    }
+  }
 }
 
 function buildBiomeOptions(selectEl, selectedValue) {
-    selectEl.innerHTML = '';
-    for (const b of BIOMES) {
-        const opt = document.createElement('option');
-        opt.value = b.label;
-        opt.textContent = b.main === b.label ? b.label : (b.label + ' (' + b.main + ')');
-        selectEl.appendChild(opt);
+  selectEl.innerHTML = '';
+  for (const b of BIOMES) {
+    const opt = document.createElement('option');
+    opt.value = b.label;
+    opt.textContent = b.main === b.label ? b.label : (b.label + ' (' + b.main + ')');
+    selectEl.appendChild(opt);
+  }
+  if (selectedValue) {
+    selectEl.value = selectedValue;
+    if (selectEl.value !== selectedValue) {
+      const opt = document.createElement('option');
+      opt.value = selectedValue;
+      opt.textContent = selectedValue + ' (custom)';
+      selectEl.appendChild(opt);
+      selectEl.value = selectedValue;
     }
-    if (selectedValue) {
-        selectEl.value = selectedValue;
-        if (selectEl.value !== selectedValue) {
-            const opt = document.createElement('option');
-            opt.value = selectedValue;
-            opt.textContent = selectedValue + ' (custom)';
-            selectEl.appendChild(opt);
-            selectEl.value = selectedValue;
-        }
-    }
+  }
 }
 
-/* ---------------- Sorting (display order only — never rewrites
-   the underlying rows array, so the linked CSV file's insertion
-   order is unaffected by whatever sort is currently shown) ------ */
+/* ------------------------------------------------------------
+   8. Sorting (display order only — client-side over whatever
+   Firestore just delivered for the active view)
+   ------------------------------------------------------------ */
 
 function getSortedRows() {
-    const copy = rows.slice();
-    if (sortMode === 'priority') {
-        copy.sort((a, b) => Number(a.priority || 1) - Number(b.priority || 1));
-    } else if (sortMode === 'biome') {
-        copy.sort((a, b) => (a.biome || '').localeCompare(b.biome || ''));
-    } else {
-        // time-registered: most recently added first
-        copy.sort((a, b) => (b.dateAdded || '').localeCompare(a.dateAdded || ''));
-    }
-    return copy;
+  const copy = rows.slice();
+  if (sortMode === 'priority') {
+    copy.sort((a, b) => Number(a.priority || 1) - Number(b.priority || 1));
+  } else if (sortMode === 'biome') {
+    copy.sort((a, b) => (a.biome || '').localeCompare(b.biome || ''));
+  } else {
+    // time-registered: most recently added first
+    copy.sort((a, b) => (b.dateAdded || '').localeCompare(a.dateAdded || ''));
+  }
+  return copy;
 }
 
 function initSortControls() {
-    const radios = {
-        time: document.getElementById('sort-time'),
-        priority: document.getElementById('sort-priority'),
-        biome: document.getElementById('sort-biome')
-    };
-    Object.entries(radios).forEach(([mode, radio]) => {
-        radio.addEventListener('change', () => {
-            if (!radio.checked) return;
-            sortMode = mode;
-            renderTable();
-        });
+  const radios = {
+    time: document.getElementById('sort-time'),
+    priority: document.getElementById('sort-priority'),
+    biome: document.getElementById('sort-biome')
+  };
+  Object.entries(radios).forEach(([mode, radio]) => {
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      sortMode = mode;
+      renderTable();
     });
+  });
 }
 
-/* ---------------- Table rendering ---------------- */
+/* ------------------------------------------------------------
+   9. Table rendering
+   ------------------------------------------------------------ */
 
 function autoGrow(textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = (textarea.scrollHeight + 2) + 'px';
+  textarea.style.height = 'auto';
+  textarea.style.height = (textarea.scrollHeight + 2) + 'px';
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function renderTable() {
-    const tbody = document.getElementById('planet-tbody');
-    tbody.innerHTML = '';
+  const tbody = document.getElementById('planet-tbody');
+  tbody.innerHTML = '';
 
-    if (rows.length === 0) {
-        const tr = document.createElement('tr');
-        tr.className = 'empty-table-row';
-        const td = document.createElement('td');
-        td.colSpan = 6;
-        td.textContent = 'No planets logged yet. Build a portal address above and click "Add as new row" to start.';
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-        return;
-    }
+  if (rows.length === 0) {
+    const tr = document.createElement('tr');
+    tr.className = 'empty-table-row';
+    const td = document.createElement('td');
+    td.colSpan = 8;
+    td.textContent = viewMode === 'all'
+      ? 'No planets registered by anyone yet.'
+      : 'No planets logged yet. Build a portal address above and click "Add as new row" to start.';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
 
-    for (const row of getSortedRows()) {
-        tbody.appendChild(buildRowEl(row));
-    }
+  for (const row of getSortedRows()) {
+    tbody.appendChild(buildRowEl(row));
+  }
 }
 
 function replaceRowEl(row) {
-    const tbody = document.getElementById('planet-tbody');
-    const oldTr = tbody.querySelector('tr[data-id="' + row.id + '"]');
-    const newTr = buildRowEl(row);
-    if (oldTr) {
-        oldTr.replaceWith(newTr);
-    } else {
-        tbody.appendChild(newTr);
-    }
-    return newTr;
+  const tbody = document.getElementById('planet-tbody');
+  const oldTr = tbody.querySelector('tr[data-id="' + row.id + '"]');
+  const newTr = buildRowEl(row);
+  if (oldTr) {
+    oldTr.replaceWith(newTr);
+  } else {
+    tbody.appendChild(newTr);
+  }
+  return newTr;
 }
 
 function buildRowEl(row) {
-    const tr = document.createElement('tr');
-    tr.dataset.id = row.id;
-    const editable = !row.locked;
+  const tr = document.createElement('tr');
+  tr.dataset.id = row.id;
+  const isOwner = currentUser && row.uid === currentUser.uid;
+  const editable = isOwner && editingIds.has(row.id);
 
-    // Priority
-    const tdPriority = document.createElement('td');
-    tdPriority.className = 'col-priority';
-    const prioritySelect = document.createElement('select');
-    prioritySelect.className = 'row-priority';
-    prioritySelect.disabled = !editable;
-    buildPriorityOptions(prioritySelect, row.priority);
-    prioritySelect.addEventListener('change', () => {
-        row.priority = prioritySelect.value;
-    });
-    tdPriority.appendChild(prioritySelect);
-    tr.appendChild(tdPriority);
+  // Priority
+  const tdPriority = document.createElement('td');
+  tdPriority.className = 'col-priority';
+  const prioritySelect = document.createElement('select');
+  prioritySelect.className = 'row-priority';
+  prioritySelect.disabled = !editable;
+  buildPriorityOptions(prioritySelect, row.priority);
+  prioritySelect.addEventListener('change', () => {
+    window.NMSFirebase.updatePlanet(row.id, { priority: prioritySelect.value });
+  });
+  tdPriority.appendChild(prioritySelect);
+  tr.appendChild(tdPriority);
 
-    // Galaxy
-    const tdGalaxy = document.createElement('td');
-    const galSelect = document.createElement('select');
-    galSelect.className = 'row-galaxy';
-    galSelect.disabled = !editable;
-    buildGalaxyOptions(galSelect, row.galaxy);
-    galSelect.addEventListener('change', () => {
-        row.galaxy = galSelect.value;
-    });
-    tdGalaxy.appendChild(galSelect);
-    tr.appendChild(tdGalaxy);
+  // Galaxy
+  const tdGalaxy = document.createElement('td');
+  const galSelect = document.createElement('select');
+  galSelect.className = 'row-galaxy';
+  galSelect.disabled = !editable;
+  buildGalaxyOptions(galSelect, row.galaxy);
+  galSelect.addEventListener('change', () => {
+    window.NMSFirebase.updatePlanet(row.id, { galaxy: galSelect.value });
+  });
+  tdGalaxy.appendChild(galSelect);
+  tr.appendChild(tdGalaxy);
 
-    // Portal glyphs — read-only, fixed at row creation via the glyph builder
-    const tdGlyphs = document.createElement('td');
-    tdGlyphs.className = 'col-glyphs';
-    const glyphsWrap = document.createElement('div');
-    glyphsWrap.className = 'row-glyphs';
-    renderAddressGlyphs(glyphsWrap, row.address);
-    tdGlyphs.appendChild(glyphsWrap);
-    tr.appendChild(tdGlyphs);
+  // Portal glyphs — read-only, fixed at row creation via the glyph builder
+  const tdGlyphs = document.createElement('td');
+  tdGlyphs.className = 'col-glyphs';
+  const glyphsWrap = document.createElement('div');
+  glyphsWrap.className = 'row-glyphs';
+  renderAddressGlyphs(glyphsWrap, row.address);
+  tdGlyphs.appendChild(glyphsWrap);
+  tr.appendChild(tdGlyphs);
 
-    // Main biome
-    const tdBiome = document.createElement('td');
-    const biomeSelect = document.createElement('select');
-    biomeSelect.className = 'row-biome';
-    biomeSelect.disabled = !editable;
-    buildBiomeOptions(biomeSelect, row.biome);
-    biomeSelect.addEventListener('change', () => {
-        row.biome = biomeSelect.value;
-    });
-    tdBiome.appendChild(biomeSelect);
-    tr.appendChild(tdBiome);
+  // Main biome
+  const tdBiome = document.createElement('td');
+  const biomeSelect = document.createElement('select');
+  biomeSelect.className = 'row-biome';
+  biomeSelect.disabled = !editable;
+  buildBiomeOptions(biomeSelect, row.biome);
+  biomeSelect.addEventListener('change', () => {
+    window.NMSFirebase.updatePlanet(row.id, { biome: biomeSelect.value });
+  });
+  tdBiome.appendChild(biomeSelect);
+  tr.appendChild(tdBiome);
 
-    // Notes — unrestricted length, wraps and auto-grows to show full content
-    const tdNotes = document.createElement('td');
-    tdNotes.className = 'col-notes';
-    const notesArea = document.createElement('textarea');
-    notesArea.rows = 1;
-    notesArea.value = row.notes || '';
-    notesArea.placeholder = 'Why revisit this one…';
-    notesArea.disabled = !editable;
-    notesArea.addEventListener('input', () => {
-        row.notes = notesArea.value;
-        autoGrow(notesArea);
-    });
-    tdNotes.appendChild(notesArea);
-    tr.appendChild(tdNotes);
-    requestAnimationFrame(() => autoGrow(notesArea));
+  // By (nickname) — only meaningful/visible in "All Registered" mode
+  const tdOwner = document.createElement('td');
+  tdOwner.className = 'col-owner';
+  tdOwner.textContent = row.nickname || '—';
+  tr.appendChild(tdOwner);
 
-    // Actions: Edit/Save (depending on lock state) + Delete
-    const tdActions = document.createElement('td');
-    tdActions.className = 'col-actions row-save-cell';
+  // Registered (date) — only meaningful/visible in "All Registered" mode
+  const tdRegistered = document.createElement('td');
+  tdRegistered.className = 'col-registered';
+  tdRegistered.textContent = formatDate(row.dateAdded);
+  tr.appendChild(tdRegistered);
 
-    const statusEl = document.createElement('span');
-    statusEl.className = 'row-save-status';
+  // Notes — unrestricted length, wraps and auto-grows to show full content
+  const tdNotes = document.createElement('td');
+  tdNotes.className = 'col-notes';
+  const notesArea = document.createElement('textarea');
+  notesArea.rows = 1;
+  notesArea.value = row.notes || '';
+  notesArea.placeholder = 'Why revisit this one…';
+  notesArea.disabled = !editable;
+  notesArea.addEventListener('input', () => autoGrow(notesArea));
+  notesArea.addEventListener('change', () => {
+    window.NMSFirebase.updatePlanet(row.id, { notes: notesArea.value });
+  });
+  tdNotes.appendChild(notesArea);
+  tr.appendChild(tdNotes);
+  requestAnimationFrame(() => autoGrow(notesArea));
 
-    const flashStatus = (message, ok) => {
-        statusEl.textContent = message;
-        statusEl.className = 'row-save-status ' + (ok ? 'row-save-status-ok' : 'row-save-status-warn');
-        setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'row-save-status'; }, 4000);
-    };
+  // Actions: Edit/Done + Delete — owner only, hidden entirely for other
+  // users' rows when viewing "All Registered"
+  const tdActions = document.createElement('td');
+  tdActions.className = 'col-actions row-save-cell';
 
+  if (isOwner) {
     if (editable) {
-        const saveBtn = document.createElement('button');
-        saveBtn.type = 'button';
-        saveBtn.className = 'icon-button';
-        saveBtn.title = 'Save this row to the linked CSV file';
-        saveBtn.textContent = '💾';
-        saveBtn.addEventListener('click', async () => {
-            if (!row.address || row.address.length !== ADDRESS_LENGTH) {
-                flashStatus('Portal address incomplete', false);
-                return;
-            }
-            saveBtn.disabled = true;
-            statusEl.textContent = 'Saving…';
-            statusEl.className = 'row-save-status';
-            const result = await writeCsvToLinkedFile();
-            if (result.ok) {
-                row.locked = true;
-                row.everSaved = true;
-                replaceRowEl(row);
-                return;
-            }
-            saveBtn.disabled = false;
-            flashStatus(result.message, false);
-        });
-        tdActions.appendChild(saveBtn);
+      const doneBtn = document.createElement('button');
+      doneBtn.type = 'button';
+      doneBtn.className = 'icon-button';
+      doneBtn.title = 'Done editing';
+      doneBtn.textContent = '✔';
+      doneBtn.addEventListener('click', () => {
+        editingIds.delete(row.id);
+        replaceRowEl(row);
+      });
+      tdActions.appendChild(doneBtn);
     } else {
-        const editBtn = document.createElement('button');
-        editBtn.type = 'button';
-        editBtn.className = 'icon-button';
-        editBtn.title = 'Edit row';
-        editBtn.textContent = '✎';
-        editBtn.addEventListener('click', () => {
-            row.locked = false;
-            replaceRowEl(row);
-        });
-        tdActions.appendChild(editBtn);
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'icon-button';
+      editBtn.title = 'Edit row';
+      editBtn.textContent = '✎';
+      editBtn.addEventListener('click', () => {
+        editingIds.add(row.id);
+        replaceRowEl(row);
+      });
+      tdActions.appendChild(editBtn);
     }
 
     const delBtn = document.createElement('button');
@@ -562,325 +594,239 @@ function buildRowEl(row) {
     delBtn.title = 'Delete row';
     delBtn.textContent = '✕';
     delBtn.addEventListener('click', async () => {
-        if (!confirm('Delete this planet entry? This cannot be undone.')) return;
-        if (!row.everSaved) {
-            rows = rows.filter(r => r.id !== row.id);
-            renderTable();
-            return;
-        }
-        delBtn.disabled = true;
-        const prevRows = rows;
-        rows = rows.filter(r => r.id !== row.id);
-        const result = await writeCsvToLinkedFile();
-        if (!result.ok) {
-            rows = prevRows;
-            delBtn.disabled = false;
-            flashStatus(result.message, false);
-            return;
-        }
-        renderTable();
+      if (!confirm('Delete this planet entry? This cannot be undone.')) return;
+      delBtn.disabled = true;
+      try {
+        await window.NMSFirebase.deletePlanet(row.id);
+      } catch (err) {
+        console.error('[visited planets] Delete failed:', err);
+        delBtn.disabled = false;
+      }
     });
-
     tdActions.appendChild(delBtn);
-    tdActions.appendChild(statusEl);
-    tr.appendChild(tdActions);
+  }
 
-    return tr;
+  tr.appendChild(tdActions);
+
+  return tr;
 }
 
-/* ---------------- Glyph builder (box above the table) ---------------- */
+/* ------------------------------------------------------------
+   10. Glyph builder (box above the table)
+   ------------------------------------------------------------ */
 
 function renderBuilder() {
-    const slotsWrap = document.getElementById('builder-slots');
-    slotsWrap.innerHTML = '';
-    for (let i = 0; i < ADDRESS_LENGTH; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'glyph-slot';
-        if (i === builderDigits.length) slot.classList.add('glyph-slot-current');
-        if (builderDigits[i]) {
-            const img = document.createElement('img');
-            img.src = glyphImgSrc(builderDigits[i]);
-            img.alt = builderDigits[i];
-            slot.appendChild(img);
-        }
-        slotsWrap.appendChild(slot);
+  const slotsWrap = document.getElementById('builder-slots');
+  slotsWrap.innerHTML = '';
+  for (let i = 0; i < ADDRESS_LENGTH; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'glyph-slot';
+    if (i === builderDigits.length) slot.classList.add('glyph-slot-current');
+    if (builderDigits[i]) {
+      const img = document.createElement('img');
+      img.src = glyphImgSrc(builderDigits[i]);
+      img.alt = builderDigits[i];
+      slot.appendChild(img);
     }
+    slotsWrap.appendChild(slot);
+  }
 
-    const codeEl = document.getElementById('builder-code');
-    const code = builderDigits.join('');
-    codeEl.innerHTML = '';
-    const label = document.createElement('span');
-    label.className = 'code-label';
-    label.textContent = 'Code:';
-    codeEl.appendChild(label);
-    codeEl.appendChild(document.createTextNode(' ' + (code || '—')));
+  const codeEl = document.getElementById('builder-code');
+  const code = builderDigits.join('');
+  codeEl.innerHTML = '';
+  const label = document.createElement('span');
+  label.className = 'code-label';
+  label.textContent = 'Code:';
+  codeEl.appendChild(label);
+  codeEl.appendChild(document.createTextNode(' ' + (code || '—')));
 
-    const addBtn = document.getElementById('builder-add-row');
-    addBtn.disabled = builderDigits.length !== ADDRESS_LENGTH;
+  const addBtn = document.getElementById('builder-add-row');
+  addBtn.disabled = builderDigits.length !== ADDRESS_LENGTH || !currentUser;
 }
 
 function buildPalette() {
-    const palette = document.getElementById('glyph-palette');
-    palette.innerHTML = '';
-    for (const ch of GLYPH_CHARS) {
-        const key = document.createElement('button');
-        key.type = 'button';
-        key.className = 'glyph-key';
-        key.title = 'Glyph ' + ch;
-        const img = document.createElement('img');
-        img.src = glyphImgSrc(ch);
-        img.alt = ch;
-        key.appendChild(img);
-        key.addEventListener('click', () => {
-            if (builderDigits.length >= ADDRESS_LENGTH) return;
-            builderDigits.push(ch);
-            renderBuilder();
-        });
-        palette.appendChild(key);
-    }
+  const palette = document.getElementById('glyph-palette');
+  palette.innerHTML = '';
+  for (const ch of GLYPH_CHARS) {
+    const key = document.createElement('button');
+    key.type = 'button';
+    key.className = 'glyph-key';
+    key.title = 'Glyph ' + ch;
+    const img = document.createElement('img');
+    img.src = glyphImgSrc(ch);
+    img.alt = ch;
+    key.appendChild(img);
+    key.addEventListener('click', () => {
+      if (builderDigits.length >= ADDRESS_LENGTH) return;
+      builderDigits.push(ch);
+      renderBuilder();
+    });
+    palette.appendChild(key);
+  }
 }
 
 function initBuilderControls() {
-    document.getElementById('builder-backspace').addEventListener('click', () => {
-        builderDigits.pop();
-        renderBuilder();
-    });
-    document.getElementById('builder-clear').addEventListener('click', () => {
-        builderDigits = [];
-        renderBuilder();
-    });
-    document.getElementById('builder-add-row').addEventListener('click', () => {
-        if (builderDigits.length !== ADDRESS_LENGTH) return;
-        const row = makeEmptyRow(builderDigits.join(''));
-        rows.unshift(row);
-        renderTable();
-        builderDigits = [];
-        renderBuilder();
-        const newTr = document.querySelector('#planet-tbody tr[data-id="' + row.id + '"]');
-        if (newTr) newTr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
-}
-
-/* ---------------- Toolbar: connect data file ---------------- */
-
-function initToolbar() {
-    document.getElementById('connect-file-btn').addEventListener('click', handleConnectClick);
-}
-
-async function handleConnectClick() {
-    const btn = document.getElementById('connect-file-btn');
-    btn.disabled = true;
+  document.getElementById('builder-backspace').addEventListener('click', () => {
+    builderDigits.pop();
+    renderBuilder();
+  });
+  document.getElementById('builder-clear').addEventListener('click', () => {
+    builderDigits = [];
+    renderBuilder();
+  });
+  document.getElementById('builder-add-row').addEventListener('click', async () => {
+    if (builderDigits.length !== ADDRESS_LENGTH || !currentUser) return;
+    const addBtn = document.getElementById('builder-add-row');
+    addBtn.disabled = true;
     try {
-        if (csvFileHandle) {
-            // We already know the file — just re-request permission (small
-            // browser prompt, not a file picker).
-            const granted = await verifyPermission(csvFileHandle, true);
-            if (granted) {
-                await loadFromLinkedFile();
-            } else {
-                setFileStatus('Permission denied — click Reconnect to try again.');
-            }
-        } else {
-            await connectToFile();
-        }
+      // New entries always land in "My Registered" — switch there if
+      // the person was looking at "All Registered" so they see it land.
+      if (viewMode !== 'mine') setViewMode('mine');
+      await window.NMSFirebase.addPlanet(currentUser.uid, currentNickname, {
+        priority: '1',
+        galaxy: GALAXIES.length ? String(GALAXIES[0].index) : '',
+        address: builderDigits.join(''),
+        biome: BIOMES.length ? BIOMES[0].label : '',
+        notes: '',
+        dateAdded: new Date().toISOString()
+      });
+      builderDigits = [];
+      renderBuilder();
     } catch (err) {
-        console.error('[visited planets] Connect click failed:', err);
-        setFileStatus('Something went wrong connecting — click Connect to retry.');
+      console.error('[visited planets] Failed to add row:', err);
+      alert('Could not save this entry — try again.');
     }
-    btn.disabled = false;
+    addBtn.disabled = builderDigits.length !== ADDRESS_LENGTH;
+  });
 }
+
+/* ------------------------------------------------------------
+   11. Legacy CSV import (one-time, via File System Access API)
+   ------------------------------------------------------------ */
 
 function setFileStatus(text) {
-    document.getElementById('file-status').textContent = text;
+  document.getElementById('file-status').textContent = text;
 }
-
-function showConnectUi(label) {
-    const btn = document.getElementById('connect-file-btn');
-    btn.style.display = '';
-    btn.textContent = label;
-}
-
-function hideConnectUi() {
-    document.getElementById('connect-file-btn').style.display = 'none';
-}
-
-/* ---------------- CSV encode/decode ---------------- */
 
 function csvEscape(value) {
-    const str = String(value === undefined || value === null ? '' : value);
-    if (/[",\n]/.test(str)) {
-        return '"' + str.replace(/"/g, '""') + '"';
-    }
-    return str;
-}
-
-function buildCsv() {
-    const header = ['Priority', 'Galaxy', 'PortalAddress', 'MainBiome', 'Notes', 'DateAdded'];
-    const lines = [header.join(',')];
-    for (const row of rows) {
-        const galaxyEntry = GALAXIES.find(g => String(g.index) === String(row.galaxy));
-        const galaxyLabel = galaxyEntry ? (galaxyEntry.index + ' - ' + galaxyEntry.name) : row.galaxy;
-        lines.push([
-            csvEscape(row.priority),
-            csvEscape(galaxyLabel),
-            csvEscape(row.address),
-            csvEscape(row.biome),
-            csvEscape(row.notes),
-            csvEscape(row.dateAdded)
-        ].join(','));
-    }
-    return lines.join('\r\n');
+  const str = String(value === undefined || value === null ? '' : value);
+  if (/[",\n]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
 }
 
 function parseCsv(text) {
-    const table = [];
-    let field = '', record = [], inQuotes = false;
-    const pushField = () => { record.push(field); field = ''; };
-    const pushRecord = () => { pushField(); table.push(record); record = []; };
-    for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (inQuotes) {
-            if (c === '"') {
-                if (text[i + 1] === '"') { field += '"'; i++; }
-                else { inQuotes = false; }
-            } else {
-                field += c;
-            }
-            continue;
-        }
-        if (c === '"') { inQuotes = true; }
-        else if (c === ',') { pushField(); }
-        else if (c === '\r') { /* skip */ }
-        else if (c === '\n') { pushRecord(); }
-        else { field += c; }
+  const table = [];
+  let field = '', record = [], inQuotes = false;
+  const pushField = () => { record.push(field); field = ''; };
+  const pushRecord = () => { pushField(); table.push(record); record = []; };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+      continue;
     }
-    if (field !== '' || record.length) pushRecord();
-    return table.filter(r => !(r.length === 1 && r[0] === ''));
+    if (c === '"') { inQuotes = true; }
+    else if (c === ',') { pushField(); }
+    else if (c === '\r') { /* skip */ }
+    else if (c === '\n') { pushRecord(); }
+    else { field += c; }
+  }
+  if (field !== '' || record.length) pushRecord();
+  return table.filter(r => !(r.length === 1 && r[0] === ''));
 }
 
 function parseGalaxyFromLabel(label) {
-    const match = String(label || '').trim().match(/^(\d+)/);
-    return match ? match[1] : '';
+  const match = String(label || '').trim().match(/^(\d+)/);
+  return match ? match[1] : '';
 }
 
 function rowsFromCsvText(text) {
-    const table = parseCsv(text);
-    if (table.length < 2) return [];
-    return table.slice(1).map(cols => ({
-        id: makeId(),
-        priority: cols[0] || '1',
-        galaxy: parseGalaxyFromLabel(cols[1]),
-        address: (cols[2] || '').toUpperCase(),
-        biome: cols[3] || (BIOMES.length ? BIOMES[0].label : ''),
-        notes: cols[4] || '',
-        dateAdded: cols[5] || '',
-        locked: true,
-        everSaved: true
-    }));
+  const table = parseCsv(text);
+  if (table.length < 2) return [];
+  return table.slice(1).map(cols => ({
+    priority: cols[0] || '1',
+    galaxy: parseGalaxyFromLabel(cols[1]),
+    address: (cols[2] || '').toUpperCase(),
+    biome: cols[3] || (BIOMES.length ? BIOMES[0].label : ''),
+    notes: cols[4] || '',
+    dateAdded: cols[5] || new Date().toISOString()
+  }));
 }
 
-/* ---------------- Linked file read/write ---------------- */
-
-async function connectToFile() {
-    if (!window.showOpenFilePicker) {
-        setFileStatus('Direct file access isn\'t supported in this browser — use Chrome or Edge.');
-        return;
-    }
-    try {
-        const [handle] = await window.showOpenFilePicker({
-            suggestedName: CSV_SUGGESTED_NAME,
-            types: [{ description: 'CSV file', accept: { 'text/csv': ['.csv'] } }],
-            excludeAcceptAllOption: false
-        });
-        csvFileHandle = handle;
-        await setStoredHandle(handle);
-        await loadFromLinkedFile();
-    } catch (err) {
-        if (err && err.name === 'AbortError') return; // user cancelled the picker
-        console.error('[visited planets] File picker failed:', err);
-        setFileStatus('Could not open the file picker.');
-    }
+function initImportButton() {
+  document.getElementById('import-csv-btn').addEventListener('click', handleImportClick);
 }
 
-async function loadFromLinkedFile() {
-    if (!csvFileHandle) return;
-    const granted = await verifyPermission(csvFileHandle, true);
-    if (!granted) {
-        showConnectUi('Reconnect ' + CSV_SUGGESTED_NAME);
-        setFileStatus('Permission needed to read ' + CSV_SUGGESTED_NAME + '.');
-        return;
+async function handleImportClick() {
+  if (!currentUser) return;
+  if (!window.showOpenFilePicker) {
+    setFileStatus('Direct file access isn\'t supported in this browser — use Chrome or Edge.');
+    return;
+  }
+  const btn = document.getElementById('import-csv-btn');
+  btn.disabled = true;
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      suggestedName: CSV_SUGGESTED_NAME,
+      types: [{ description: 'CSV file', accept: { 'text/csv': ['.csv'] } }],
+      excludeAcceptAllOption: false
+    });
+    const file = await handle.getFile();
+    const text = await file.text();
+    const parsedRows = rowsFromCsvText(text);
+    setFileStatus('Importing ' + parsedRows.length + ' row(s)…');
+    const added = await window.NMSFirebase.importRows(currentUser.uid, currentNickname, parsedRows);
+    setFileStatus('Imported ' + added + ' new row(s) from ' + file.name +
+      (added < parsedRows.length ? ' (' + (parsedRows.length - added) + ' already present, skipped)' : ''));
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      btn.disabled = false;
+      return; // user cancelled the picker
     }
-    try {
-        const file = await csvFileHandle.getFile();
-        const text = await file.text();
-        rows = rowsFromCsvText(text);
-        console.log('[visited planets] Loaded', rows.length, 'row(s) from', file.name, '(', text.length, 'chars)');
-    } catch (err) {
-        console.error('[visited planets] Failed to read linked CSV file:', err);
-        showConnectUi('Reconnect ' + CSV_SUGGESTED_NAME);
-        setFileStatus('Could not read ' + CSV_SUGGESTED_NAME + ' — click Reconnect to try again.');
-        return;
-    }
-    hideConnectUi();
-    setFileStatus('Linked: ' + (csvFileHandle.name || CSV_SUGGESTED_NAME) + ' — ' + rows.length + ' row' + (rows.length === 1 ? '' : 's') + ' loaded');
-    renderTable();
+    console.error('[visited planets] CSV import failed:', err);
+    setFileStatus('Import failed — try again.');
+  }
+  btn.disabled = false;
 }
 
-async function writeCsvToLinkedFile() {
-    if (!csvFileHandle) return { ok: false, message: 'Not connected to a file' };
-    const granted = await verifyPermission(csvFileHandle, true);
-    if (!granted) return { ok: false, message: 'Permission denied' };
-    try {
-        const writable = await csvFileHandle.createWritable();
-        await writable.write(buildCsv());
-        await writable.close();
-        return { ok: true, message: 'Saved ✓' };
-    } catch (err) {
-        console.error('[visited planets] Failed to write linked CSV file:', err);
-        return { ok: false, message: 'Save failed' };
-    }
-}
+/* ------------------------------------------------------------
+   12. Init
+   ------------------------------------------------------------ */
 
-/* ---------------- Init ---------------- */
+function init() {
+  buildPalette();
+  initBuilderControls();
+  initSortControls();
+  initViewToggle();
+  initImportButton();
+  initAuthUi();
+  renderBuilder();
+  renderTable();
 
-async function connectOnLoad() {
-    if (!window.showOpenFilePicker) {
-        setFileStatus('Direct file access isn\'t supported in this browser — use Chrome or Edge to load/save ' + CSV_SUGGESTED_NAME + '.');
-        return;
-    }
+  setSignedOutUi();
 
-    const stored = await getStoredHandle();
-    if (!stored || typeof stored.getFile !== 'function') {
-        if (stored) await clearStoredHandle(); // stale/invalid entry — drop it
-        showConnectUi('Connect ' + CSV_SUGGESTED_NAME);
-        setFileStatus('Not connected — click Connect to link data/' + CSV_SUGGESTED_NAME + ' (one-time).');
-        return;
-    }
-    csvFileHandle = stored;
-    const granted = await verifyPermission(csvFileHandle, false);
-    if (granted) {
-        await loadFromLinkedFile();
+  window.NMSFirebase.onAuthStateChanged(async (user) => {
+    if (user) {
+      await setSignedInUi(user);
+      renderBuilder(); // re-check the "Add as new row" enabled state
     } else {
-        showConnectUi('Reconnect ' + CSV_SUGGESTED_NAME);
-        setFileStatus('Permission needed to read ' + CSV_SUGGESTED_NAME + ' again.');
+      currentUser = null;
+      currentNickname = '';
+      editingIds.clear();
+      if (unsubscribePlanets) { unsubscribePlanets(); unsubscribePlanets = null; }
+      rows = [];
+      renderTable();
+      renderBuilder();
+      setSignedOutUi();
     }
-}
-
-async function init() {
-    buildPalette();
-    initBuilderControls();
-    initToolbar();
-    initSortControls();
-    renderBuilder();
-    renderTable();
-
-    try {
-        await connectOnLoad();
-    } catch (err) {
-        console.error('[visited planets] Unexpected error connecting to the data file:', err);
-        showConnectUi('Connect ' + CSV_SUGGESTED_NAME);
-        setFileStatus('Something went wrong connecting to ' + CSV_SUGGESTED_NAME + ' — click Connect to retry.');
-    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
