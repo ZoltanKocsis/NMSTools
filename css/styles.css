@@ -1148,6 +1148,15 @@ a:hover {
 }
 
 
+.glyph-slot.glyph-slot-low-confidence {
+
+    border-color: var(--color-blue);
+
+    box-shadow: 0 0 0 2px rgba(207,154,118,0.35);
+
+}
+
+
 .glyph-builder-code {
 
     margin-bottom: 14px;
@@ -1637,3 +1646,275 @@ a:hover {
 /* ============================================================
    END OF XENO ARENA — PLANET TRACKER EXTENSIONS
    ============================================================ */
+
+
+/* ============================================================
+   22. GLYPH SCAN UI (Symbol Reading page + Visited Planets' scan
+   section — shared classes, used by any page with a screenshot
+   upload/detect flow)
+   ============================================================ */
+
+.count-pill {
+
+    display: inline-block;
+
+    padding: 4px 12px;
+
+    border: 1px solid var(--color-nav-active);
+
+    border-radius: 20px;
+
+    background: rgba(79,169,143,0.12);
+
+    color: var(--color-nav-active);
+
+    font-size: 0.78rem;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+}
+
+
+.panel-header-row {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    padding-bottom: 8px;
+
+    margin-bottom: 16px;
+
+    border-bottom: 1px solid var(--color-border);
+
+}
+
+
+.panel-header-row h2,
+.panel-header-row h3 {
+
+    margin: 0;
+
+    padding-bottom: 0;
+
+    border-bottom: none;
+
+}
+
+
+.glyph-scan-section {
+
+    margin-bottom: 18px;
+
+    padding-bottom: 16px;
+
+    border-bottom: 1px solid var(--color-glyph-border);
+
+}
+
+
+.glyph-scan-section h3 {
+
+    color: #ffffff;
+
+}
+
+
+.glyph-scan-canvas-wrap {
+
+    position: relative;
+
+    display: inline-block;
+
+    max-width: 100%;
+
+    margin-top: 4px;
+
+}
+
+
+.glyph-scan-canvas-wrap-zoom {
+
+    overflow-x: auto;
+
+}
+
+
+.glyph-scan-canvas {
+
+    display: block;
+
+    max-width: 100%;
+
+    border: 1px solid var(--color-border-dark);
+
+    border-radius: var(--radius-small);
+
+    cursor: crosshair;
+
+}
+
+
+.glyph-scan-select-box {
+
+    position: absolute;
+
+    display: none;
+
+    border: 2px dashed var(--color-nav-active);
+
+    background: rgba(79,169,143,0.15);
+
+    pointer-events: none;
+
+}
+
+
+.glyph-scan-auto-box {
+
+    position: absolute;
+
+    display: none;
+
+    border: 2px solid var(--color-blue);
+
+    background: rgba(207,154,118,0.18);
+
+    pointer-events: none;
+
+}
+
+
+.glyph-cells {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+}
+
+
+.glyph-cell {
+
+    width: 76px;
+
+    padding: 8px;
+
+    text-align: center;
+
+    background: var(--color-glyph-bg);
+
+    border: 1px solid var(--color-glyph-border);
+
+    border-radius: var(--radius-small);
+
+}
+
+
+.glyph-cell canvas {
+
+    width: 56px;
+
+    height: 56px;
+
+    background: #0b0a09;
+
+    border-radius: var(--radius-small);
+
+}
+
+
+.glyph-cell select {
+
+    width: 100%;
+
+    margin-top: 6px;
+
+    padding: 6px 2px;
+
+    text-align: center;
+
+    text-align-last: center;
+
+    font-family: "Courier New", monospace;
+
+    font-size: 0.9rem;
+
+    font-weight: 700;
+
+}
+
+
+.conf {
+
+    margin-top: 4px;
+
+    font-size: 0.72rem;
+
+    font-weight: 600;
+
+}
+
+
+.conf.high {
+
+    color: var(--color-nav-active);
+
+}
+
+
+.conf.low {
+
+    color: var(--color-primary);
+
+}
+
+
+.mono {
+
+    font-family: "Courier New", monospace;
+
+    letter-spacing: 2px;
+
+    text-transform: uppercase;
+
+}
+
+
+.toast {
+
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 24px;
+
+    transform: translateX(-50%);
+
+    padding: 10px 20px;
+
+    background: var(--color-surface-alt);
+
+    border: 1px solid var(--color-nav-active);
+
+    border-radius: var(--radius-medium);
+
+    color: var(--color-text);
+
+    font-size: 0.85rem;
+
+    box-shadow: var(--shadow-raised);
+
+    z-index: 200;
+
+}

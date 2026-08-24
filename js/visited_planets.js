@@ -195,6 +195,7 @@ const HANDLE_DB_KEY = 'csvFileHandle';
 
 let rows = [];            // array of row objects — the linked CSV file is the source of truth
 let builderDigits = [];   // digits currently in the glyph builder
+let builderConfidence = []; // parallel to builderDigits — 'low' flags a scanned digit worth double-checking, null/undefined means manually entered
 let csvFileHandle = null; // File System Access API handle, once linked
 let sortMode = 'time';    // 'time' | 'priority' | 'biome' — display order only
 
@@ -597,6 +598,7 @@ function renderBuilder() {
         const slot = document.createElement('div');
         slot.className = 'glyph-slot';
         if (i === builderDigits.length) slot.classList.add('glyph-slot-current');
+        if (builderConfidence[i] === 'low') slot.classList.add('glyph-slot-low-confidence');
         if (builderDigits[i]) {
             const img = document.createElement('img');
             img.src = glyphImgSrc(builderDigits[i]);
@@ -634,6 +636,7 @@ function buildPalette() {
         key.addEventListener('click', () => {
             if (builderDigits.length >= ADDRESS_LENGTH) return;
             builderDigits.push(ch);
+            builderConfidence.push(null);
             renderBuilder();
         });
         palette.appendChild(key);
@@ -643,10 +646,12 @@ function buildPalette() {
 function initBuilderControls() {
     document.getElementById('builder-backspace').addEventListener('click', () => {
         builderDigits.pop();
+        builderConfidence.pop();
         renderBuilder();
     });
     document.getElementById('builder-clear').addEventListener('click', () => {
         builderDigits = [];
+        builderConfidence = [];
         renderBuilder();
     });
     document.getElementById('builder-add-row').addEventListener('click', () => {
@@ -655,10 +660,201 @@ function initBuilderControls() {
         rows.unshift(row);
         renderTable();
         builderDigits = [];
+        builderConfidence = [];
         renderBuilder();
         const newTr = document.querySelector('#planet-tbody tr[data-id="' + row.id + '"]');
         if (newTr) newTr.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
+}
+
+/* ---------------- Glyph scan (screenshot -> builder) ----------------
+   Uses the shared detection engine in js/glyph_detect.js. OpenCV
+   (~13MB) is only loaded the first time a screenshot is chosen here,
+   not on every page visit. Detected digits are written straight into
+   builderDigits/builderConfidence and rendered through the existing
+   renderBuilder() — this only ever calls that function, it doesn't
+   duplicate its slot-drawing logic. */
+
+let scanFullImg = null;
+let scanOverviewScale = 1;
+let scanMode = 'auto';       // 'auto' | 'manual'
+let scanZoomCrop = null;     // {fx, fy, fw, fh, scale}
+let scanDetectReady = false;
+
+function initGlyphScan() {
+    const fileInput   = document.getElementById('scan-file-input');
+    const srcCanvas   = document.getElementById('scan-src-canvas');
+    const srcCtx      = srcCanvas.getContext('2d');
+    const selectBox   = document.getElementById('scan-select-box');
+    const autoRectBox = document.getElementById('scan-auto-rect-box');
+    const zoomCanvas  = document.getElementById('scan-zoom-canvas');
+    const zoomCtx     = zoomCanvas.getContext('2d');
+    const zoomSelectBox = document.getElementById('scan-zoom-select-box');
+
+    const autoSection  = document.getElementById('scan-auto-section');
+    const manualSection= document.getElementById('scan-manual-section');
+    const zoomSection  = document.getElementById('scan-zoom-section');
+
+    const uploadHint  = document.getElementById('scan-upload-hint');
+    const zoomBtn     = document.getElementById('scan-zoom-btn');
+    const backBtn     = document.getElementById('scan-back-btn');
+    const rerunBtn    = document.getElementById('scan-rerun-btn');
+    const detectBtn   = document.getElementById('scan-detect-btn');
+    const statusEl    = document.getElementById('scan-status');
+    const manualStatusEl = document.getElementById('scan-manual-status');
+    const modeAutoRadio  = document.getElementById('scan-mode-auto');
+    const modeManualRadio= document.getElementById('scan-mode-manual');
+
+    let pendingAutoDetect = false;
+
+    function setStatus(msg) {
+        statusEl.textContent = msg;
+        manualStatusEl.textContent = msg;
+    }
+
+    let overviewState = { rect: null, onReady: () => { zoomBtn.disabled = false; } };
+    let zoomState = { rect: null, onReady: () => { detectBtn.disabled = false; } };
+    GlyphDetect.setupDragSelect(srcCanvas, selectBox, overviewState);
+    GlyphDetect.setupDragSelect(zoomCanvas, zoomSelectBox, zoomState);
+
+    function applyModeUI() {
+        if (scanMode === 'auto') {
+            autoSection.hidden = false;
+            manualSection.hidden = true;
+            zoomSection.hidden = true;
+            selectBox.style.display = 'none';
+            if (scanFullImg) runAutoDetect();
+        } else {
+            autoSection.hidden = true;
+            manualSection.hidden = false;
+            autoRectBox.style.display = 'none';
+            if (scanFullImg) setStatus('Drag a rough box around the row of 12 glyphs.');
+        }
+    }
+    modeAutoRadio.addEventListener('change', () => { if (modeAutoRadio.checked) { scanMode = 'auto'; applyModeUI(); } });
+    modeManualRadio.addEventListener('change', () => { if (modeManualRadio.checked) { scanMode = 'manual'; applyModeUI(); } });
+
+    function runAutoDetect() {
+        if (!scanFullImg) return;
+        const rect = GlyphDetect.computeAutoRect(scanFullImg.width, scanFullImg.height);
+
+        autoRectBox.style.display = 'block';
+        autoRectBox.style.left = (rect.x * scanOverviewScale) + 'px';
+        autoRectBox.style.top = (rect.y * scanOverviewScale) + 'px';
+        autoRectBox.style.width = (rect.w * scanOverviewScale) + 'px';
+        autoRectBox.style.height = (rect.h * scanOverviewScale) + 'px';
+
+        if (!scanDetectReady) {
+            setStatus('Waiting for OpenCV / templates to finish loading...');
+            pendingAutoDetect = true;
+            return;
+        }
+        runDetectAndFill(rect);
+    }
+    rerunBtn.addEventListener('click', runAutoDetect);
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setStatus('Loading OpenCV...');
+        GlyphDetect.ensureReady().then(() => {
+            scanDetectReady = true;
+            setStatus('Ready.');
+            if (pendingAutoDetect && scanFullImg && scanMode === 'auto') {
+                pendingAutoDetect = false;
+                runAutoDetect();
+            }
+            if (scanMode === 'manual') detectBtn.disabled = !scanZoomCrop;
+        }).catch(err => {
+            console.error(err);
+            setStatus('Failed to load OpenCV / glyph templates — check js/opencv.js and images/glyphs/ are present.');
+        });
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const im = new Image();
+            im.onload = () => {
+                scanFullImg = im;
+                const maxW = 900;
+                scanOverviewScale = Math.min(1, maxW / im.width);
+                srcCanvas.width = im.width * scanOverviewScale;
+                srcCanvas.height = im.height * scanOverviewScale;
+                srcCtx.drawImage(im, 0, 0, srcCanvas.width, srcCanvas.height);
+
+                overviewState.rect = null;
+                zoomState.rect = null;
+                scanZoomCrop = null;
+                selectBox.style.display = 'none';
+                autoRectBox.style.display = 'none';
+                zoomBtn.disabled = true;
+                zoomSection.hidden = true;
+                uploadHint.textContent = file.name + ` (${im.width}×${im.height})`;
+
+                if (scanMode === 'auto') {
+                    runAutoDetect();
+                } else {
+                    setStatus('Drag a rough box around the row of 12 glyphs.');
+                }
+            };
+            im.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    zoomBtn.addEventListener('click', () => {
+        if (!overviewState.rect || !scanFullImg) return;
+
+        const r = overviewState.rect;
+        const invScale = 1 / scanOverviewScale;
+        let fx = r.x * invScale, fy = r.y * invScale, fw = r.w * invScale, fh = r.h * invScale;
+
+        const padX = fw * 0.2, padY = fh * 0.6;
+        fx = Math.max(0, fx - padX);
+        fy = Math.max(0, fy - padY);
+        fw = Math.min(scanFullImg.width - fx, fw + padX * 2);
+        fh = Math.min(scanFullImg.height - fy, fh + padY * 2);
+
+        const targetW = 1100;
+        const zoomFactor = Math.max(1, Math.min(6, targetW / fw));
+        zoomCanvas.width = Math.round(fw * zoomFactor);
+        zoomCanvas.height = Math.round(fh * zoomFactor);
+        zoomCtx.drawImage(scanFullImg, fx, fy, fw, fh, 0, 0, zoomCanvas.width, zoomCanvas.height);
+
+        scanZoomCrop = { fx, fy, fw, fh, scale: zoomFactor };
+
+        zoomState.rect = null;
+        zoomSelectBox.style.display = 'none';
+        detectBtn.disabled = true;
+
+        zoomSection.hidden = false;
+        setStatus('Drag a tight box around exactly the 12 glyphs.');
+    });
+
+    backBtn.addEventListener('click', () => { zoomSection.hidden = true; });
+
+    detectBtn.addEventListener('click', () => {
+        if (!scanDetectReady) { setStatus('Still loading OpenCV / templates, try again shortly.'); return; }
+        if (!zoomState.rect || !scanZoomCrop) return;
+
+        const zr = zoomState.rect;
+        const fullRect = {
+            x: scanZoomCrop.fx + zr.x / scanZoomCrop.scale,
+            y: scanZoomCrop.fy + zr.y / scanZoomCrop.scale,
+            w: zr.w / scanZoomCrop.scale,
+            h: zr.h / scanZoomCrop.scale
+        };
+        runDetectAndFill(fullRect);
+    });
+
+    function runDetectAndFill(fullRect) {
+        if (!scanDetectReady || !scanFullImg) return;
+        const results = GlyphDetect.detectCells(scanFullImg, fullRect, { n: ADDRESS_LENGTH });
+        builderDigits = results.map(r => r.hex);
+        builderConfidence = results.map(r => (r.score > 0.5 ? null : 'low'));
+        renderBuilder();
+        setStatus('Detection complete — check the boxes below (outlined ones are low-confidence).');
+    }
 }
 
 /* ---------------- Toolbar: connect data file ---------------- */
@@ -869,6 +1065,7 @@ async function connectOnLoad() {
 async function init() {
     buildPalette();
     initBuilderControls();
+    initGlyphScan();
     initToolbar();
     initSortControls();
     renderBuilder();

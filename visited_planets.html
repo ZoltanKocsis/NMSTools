@@ -57,6 +57,81 @@
 
             <h2>Portal Glyph Builder</h2>
 
+            <div class="glyph-scan-section">
+
+                <h3>Scan a Screenshot (optional)</h3>
+
+                <p class="storage-status">
+                    Upload a screenshot to fill the 12 boxes below automatically instead
+                    of clicking each glyph by hand. Outlined boxes are low-confidence
+                    guesses — double-check those before adding the row.
+                </p>
+
+                <div class="table-toolbar">
+                    <div class="toolbar-group">
+                        <button type="button" class="button secondary" onclick="document.getElementById('scan-file-input').click()">Choose Screenshot</button>
+                        <input type="file" id="scan-file-input" accept="image/*" class="hidden">
+                    </div>
+                    <div class="toolbar-group">
+                        <span class="storage-status" id="scan-upload-hint">No screenshot loaded.</span>
+                    </div>
+                </div>
+
+                <div class="table-toolbar">
+                    <div class="toolbar-group">
+                        <label class="sort-option"><input type="radio" name="scan-mode" id="scan-mode-auto" checked> Auto-detect position</label>
+                        <label class="sort-option"><input type="radio" name="scan-mode" id="scan-mode-manual"> Manual selection</label>
+                    </div>
+                </div>
+
+                <div class="glyph-scan-canvas-wrap">
+                    <canvas id="scan-src-canvas" class="glyph-scan-canvas"></canvas>
+                    <div id="scan-select-box" class="glyph-scan-select-box"></div>
+                    <div id="scan-auto-rect-box" class="glyph-scan-auto-box"></div>
+                </div>
+
+                <div id="scan-auto-section">
+                    <div class="table-toolbar">
+                        <div class="toolbar-group">
+                            <button type="button" class="button secondary" id="scan-rerun-btn">Re-run Auto-Detect</button>
+                        </div>
+                        <div class="toolbar-group">
+                            <span class="storage-status" id="scan-status"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="scan-manual-section" hidden>
+                    <p class="storage-status">Drag a rough box around the row of 12 glyph icons, then zoom in to fine-tune.</p>
+                    <div class="table-toolbar">
+                        <div class="toolbar-group">
+                            <button type="button" class="button" id="scan-zoom-btn" disabled>Zoom Into Selection</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="scan-zoom-section" hidden>
+                    <div class="panel-header-row">
+                        <h3>Fine-Tune Selection</h3>
+                        <button type="button" class="button secondary" id="scan-back-btn">Back to Overview</button>
+                    </div>
+                    <p class="storage-status">Drag a tight box around exactly the 12 glyphs.</p>
+                    <div class="glyph-scan-canvas-wrap glyph-scan-canvas-wrap-zoom">
+                        <canvas id="scan-zoom-canvas" class="glyph-scan-canvas"></canvas>
+                        <div id="scan-zoom-select-box" class="glyph-scan-select-box"></div>
+                    </div>
+                    <div class="table-toolbar">
+                        <div class="toolbar-group">
+                            <button type="button" class="button" id="scan-detect-btn" disabled>Split &amp; Auto-Detect</button>
+                        </div>
+                        <div class="toolbar-group">
+                            <span class="storage-status" id="scan-manual-status"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
             <div id="builder-slots" class="glyph-builder-slots"></div>
 
             <div id="builder-code" class="glyph-builder-code"></div>
@@ -158,6 +233,8 @@
          JAVASCRIPT
          ========================================================= -->
 
+    <!-- Shared glyph-scanning engine (lazy-loads js/opencv.js itself, only when a screenshot is chosen) -->
+    <script src="js/glyph_detect.js"></script>
     <script src="js/visited_planets.js"></script>
 
 </body>

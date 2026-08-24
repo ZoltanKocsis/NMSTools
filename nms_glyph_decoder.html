@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Responsive layout -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Page title shown in the browser tab -->
+<title>Symbol Reading — NMS tools and knowledge base fun project</title>
+<!-- Main stylesheet -->
+<link rel="stylesheet" href="css/styles.css">
+<!-- Optional favicon -->
+<link rel="icon" href="images/favicon-96x96.png">
+<!-- Shared header + navigation (see js/partials.js) -->
+<script src="js/partials.js"></script>
+<!-- Google Analytics + GDPR consent notice (see js/consent.js) -->
+<script src="js/consent.js"></script>
+</head>
+<body>
+
+<!-- Header + navigation are injected here by js/partials.js -->
+<div id="site-chrome"></div>
+
+<!-- =========================================================
+     MAIN PAGE CONTENT
+     ========================================================= -->
+<main class="page-container">
+
+  <section class="page-introduction">
+    <h1>Symbol Reading</h1>
+    <p>
+      Upload a portal-address screenshot and this reads the 12 glyph icons
+      for you, so you don't have to decode them by eye. Auto-detect finds
+      the glyph row automatically for standard bottom-left HUD screenshots;
+      switch to manual selection for anything else.
+    </p>
+  </section>
+
+  <!-- =====================================================
+       UPLOAD + POSITION MODE
+       ===================================================== -->
+  <section class="content-panel" id="uploadCard">
+    <div class="panel-header-row">
+      <h2>Upload Screenshot</h2>
+      <span class="count-pill" id="countPill">0 / 12 matched</span>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="toolbar-group">
+        <button type="button" class="button secondary" onclick="document.getElementById('fileInput').click()">Choose Screenshot</button>
+        <input type="file" id="fileInput" accept="image/*" class="hidden">
+      </div>
+      <div class="toolbar-group">
+        <span class="storage-status" id="uploadHint">No screenshot loaded.</span>
+      </div>
+    </div>
+
+    <div class="table-toolbar" style="margin-top:14px;">
+      <div class="toolbar-group">
+        <label class="sort-option"><input type="radio" name="mode" id="modeAuto" checked> Auto-detect position</label>
+        <label class="sort-option"><input type="radio" name="mode" id="modeManual"> Manual selection</label>
+      </div>
+    </div>
+
+    <div class="glyph-scan-canvas-wrap">
+      <canvas id="srcCanvas" class="glyph-scan-canvas"></canvas>
+      <div id="selectBox" class="glyph-scan-select-box"></div>
+      <div id="autoRectBox" class="glyph-scan-auto-box"></div>
+    </div>
+
+    <div id="autoSection">
+      <p class="storage-status">Blue box shows the auto-calculated region, scaled from the measured 1920&times;1080 reference (x=10, y=1014, w=383, h=30). Detection runs automatically on upload.</p>
+      <div class="table-toolbar">
+        <div class="toolbar-group">
+          <button type="button" class="button secondary" id="rerunAutoBtn">Re-run Auto-Detect</button>
+        </div>
+        <div class="toolbar-group">
+          <span class="storage-status" id="status"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="manualSection" hidden>
+      <p class="storage-status">Drag a rough box around the row of 12 glyph icons, then zoom in to fine-tune.</p>
+      <div class="table-toolbar">
+        <div class="toolbar-group">
+          <button type="button" class="button" id="zoomBtn" disabled>Zoom Into Selection</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       MANUAL FINE-TUNE (zoomed crop)
+       ===================================================== -->
+  <section class="content-panel" id="zoomCard" hidden>
+    <div class="panel-header-row">
+      <h2>Fine-Tune Selection</h2>
+      <button type="button" class="button secondary" id="backBtn">Back to Overview</button>
+    </div>
+    <p class="storage-status">Drag a tight box around exactly the 12 glyphs.</p>
+    <div class="glyph-scan-canvas-wrap glyph-scan-canvas-wrap-zoom">
+      <canvas id="zoomCanvas" class="glyph-scan-canvas"></canvas>
+      <div id="zoomSelectBox" class="glyph-scan-select-box"></div>
+    </div>
+    <div class="table-toolbar">
+      <div class="toolbar-group">
+        <button type="button" class="button" id="detectBtn" disabled>Split &amp; Auto-Detect</button>
+      </div>
+      <div class="toolbar-group">
+        <span class="storage-status" id="manualStatus"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       DETECTED GLYPHS
+       ===================================================== -->
+  <section class="content-panel" id="resultsCard" hidden>
+    <h2>Detected Glyphs</h2>
+    <p class="storage-status">Review each guess below and correct any low-confidence match before copying the address.</p>
+    <div class="glyph-cells" id="cells"></div>
+  </section>
+
+  <!-- =====================================================
+       RESULT
+       ===================================================== -->
+  <section class="content-panel">
+    <h2>Portal Address</h2>
+    <div class="form-group">
+      <input type="text" id="output" class="mono" readonly value="------------">
+    </div>
+    <div class="table-toolbar">
+      <div class="toolbar-group">
+        <button type="button" class="button" id="copyBtn">Copy Address</button>
+        <button type="button" class="button secondary" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+<footer class="site-footer">
+  <p>Symbol Reading — part of the NMS tools and knowledge base project.</p>
+</footer>
+
+<div class="toast" id="toast" hidden></div>
+
+<!-- =========================================================
+     JAVASCRIPT
+     ========================================================= -->
+<!-- Shared glyph-scanning engine (lazy-loads js/opencv.js itself) -->
+<script src="js/glyph_detect.js"></script>
+<script src="js/nms_glyph_decoder.js"></script>
+</body>
+</html>
