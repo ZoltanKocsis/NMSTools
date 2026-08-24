@@ -102,6 +102,10 @@ let zoomState = { rect: null, onReady: () => { detectBtn.disabled = false; } };
 GlyphDetect.setupDragSelect(srcCanvas, selectBox, overviewState);
 GlyphDetect.setupDragSelect(zoomCanvas, zoomSelectBox, zoomState);
 
+// A plain click (no drag) on either canvas opens the full-size pan/zoom viewer.
+ImageViewer.attachClickToOpen(srcCanvas, () => fullImg && fullImg.src);
+ImageViewer.attachClickToOpen(zoomCanvas, () => fullImg && fullImg.src);
+
 // ===================================================================
 // Mode toggle
 // ===================================================================

@@ -130,6 +130,12 @@
                     </div>
                 </div>
 
+                <div id="scan-results-section" hidden>
+                    <h3>Detected Glyphs</h3>
+                    <p class="storage-status">Fix any wrong guess below — the boxes below update as you go.</p>
+                    <div class="glyph-cells" id="scan-results-cells"></div>
+                </div>
+
             </div>
 
             <div id="builder-slots" class="glyph-builder-slots"></div>
@@ -235,6 +241,8 @@
 
     <!-- Shared glyph-scanning engine (lazy-loads js/opencv.js itself, only when a screenshot is chosen) -->
     <script src="js/glyph_detect.js"></script>
+    <!-- Shared full-size pan/zoom image viewer popup -->
+    <script src="js/image_viewer.js"></script>
     <script src="js/visited_planets.js"></script>
 
 </body>

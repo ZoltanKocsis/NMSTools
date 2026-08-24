@@ -195,7 +195,6 @@ const HANDLE_DB_KEY = 'csvFileHandle';
 
 let rows = [];            // array of row objects — the linked CSV file is the source of truth
 let builderDigits = [];   // digits currently in the glyph builder
-let builderConfidence = []; // parallel to builderDigits — 'low' flags a scanned digit worth double-checking, null/undefined means manually entered
 let csvFileHandle = null; // File System Access API handle, once linked
 let sortMode = 'time';    // 'time' | 'priority' | 'biome' — display order only
 
@@ -598,7 +597,6 @@ function renderBuilder() {
         const slot = document.createElement('div');
         slot.className = 'glyph-slot';
         if (i === builderDigits.length) slot.classList.add('glyph-slot-current');
-        if (builderConfidence[i] === 'low') slot.classList.add('glyph-slot-low-confidence');
         if (builderDigits[i]) {
             const img = document.createElement('img');
             img.src = glyphImgSrc(builderDigits[i]);
@@ -636,7 +634,6 @@ function buildPalette() {
         key.addEventListener('click', () => {
             if (builderDigits.length >= ADDRESS_LENGTH) return;
             builderDigits.push(ch);
-            builderConfidence.push(null);
             renderBuilder();
         });
         palette.appendChild(key);
@@ -646,12 +643,10 @@ function buildPalette() {
 function initBuilderControls() {
     document.getElementById('builder-backspace').addEventListener('click', () => {
         builderDigits.pop();
-        builderConfidence.pop();
         renderBuilder();
     });
     document.getElementById('builder-clear').addEventListener('click', () => {
         builderDigits = [];
-        builderConfidence = [];
         renderBuilder();
     });
     document.getElementById('builder-add-row').addEventListener('click', () => {
@@ -660,7 +655,6 @@ function initBuilderControls() {
         rows.unshift(row);
         renderTable();
         builderDigits = [];
-        builderConfidence = [];
         renderBuilder();
         const newTr = document.querySelector('#planet-tbody tr[data-id="' + row.id + '"]');
         if (newTr) newTr.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -671,9 +665,12 @@ function initBuilderControls() {
    Uses the shared detection engine in js/glyph_detect.js. OpenCV
    (~13MB) is only loaded the first time a screenshot is chosen here,
    not on every page visit. Detected digits are written straight into
-   builderDigits/builderConfidence and rendered through the existing
-   renderBuilder() — this only ever calls that function, it doesn't
-   duplicate its slot-drawing logic. */
+   builderDigits and rendered through the existing renderBuilder() —
+   this only ever calls that function, it doesn't duplicate its
+   slot-drawing logic. A review grid (thumbnail + dropdown + match
+   confidence per glyph, same as Symbol Reading) is shown below the
+   canvas so a wrong guess can be corrected directly; each edit
+   updates builderDigits and re-renders the boxes above too. */
 
 let scanFullImg = null;
 let scanOverviewScale = 1;
@@ -716,6 +713,10 @@ function initGlyphScan() {
     let zoomState = { rect: null, onReady: () => { detectBtn.disabled = false; } };
     GlyphDetect.setupDragSelect(srcCanvas, selectBox, overviewState);
     GlyphDetect.setupDragSelect(zoomCanvas, zoomSelectBox, zoomState);
+
+    // A plain click (no drag) on either canvas opens the full-size pan/zoom viewer.
+    ImageViewer.attachClickToOpen(srcCanvas, () => scanFullImg && scanFullImg.src);
+    ImageViewer.attachClickToOpen(zoomCanvas, () => scanFullImg && scanFullImg.src);
 
     function applyModeUI() {
         if (scanMode === 'auto') {
@@ -849,11 +850,43 @@ function initGlyphScan() {
 
     function runDetectAndFill(fullRect) {
         if (!scanDetectReady || !scanFullImg) return;
-        const results = GlyphDetect.detectCells(scanFullImg, fullRect, { n: ADDRESS_LENGTH });
+        const results = GlyphDetect.detectCells(scanFullImg, fullRect, { n: ADDRESS_LENGTH, thumbSize: 56 });
         builderDigits = results.map(r => r.hex);
-        builderConfidence = results.map(r => (r.score > 0.5 ? null : 'low'));
         renderBuilder();
-        setStatus('Detection complete — check the boxes below (outlined ones are low-confidence).');
+        renderScanResults(results);
+        setStatus('Detection complete — review and correct any low-confidence guesses below.');
+    }
+
+    function renderScanResults(results) {
+        const section = document.getElementById('scan-results-section');
+        const cellsDiv = document.getElementById('scan-results-cells');
+        cellsDiv.innerHTML = '';
+        results.forEach((r, idx) => {
+            const cell = document.createElement('div');
+            cell.className = 'glyph-cell';
+            cell.appendChild(r.thumb);
+
+            const select = document.createElement('select');
+            GLYPH_CHARS.forEach(h => {
+                const opt = document.createElement('option');
+                opt.value = h; opt.textContent = h;
+                if (h === r.hex) opt.selected = true;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', () => {
+                builderDigits[idx] = select.value;
+                renderBuilder();
+            });
+            cell.appendChild(select);
+
+            const confDiv = document.createElement('div');
+            confDiv.className = 'conf ' + (r.score > 0.5 ? 'high' : 'low');
+            confDiv.textContent = (r.score * 100).toFixed(0) + '%';
+            cell.appendChild(confDiv);
+
+            cellsDiv.appendChild(cell);
+        });
+        section.hidden = false;
     }
 }
 
