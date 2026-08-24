@@ -1373,9 +1373,9 @@ a:hover {
 
 .planet-table select.row-priority {
 
-    width: 100%;
+    width: auto;
 
-    min-width: 44px;
+    min-width: 0;
 
     padding: 6px 4px;
 
@@ -1386,7 +1386,7 @@ a:hover {
 }
 
 
-.table-toolbar.sort-toolbar {
+.sort-toolbar {
 
     justify-content: flex-start;
 
