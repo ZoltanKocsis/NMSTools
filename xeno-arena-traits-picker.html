@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xeno Moves Calc — NMS tools and knowledge base fun project</title>
+
+<!-- Shared stylesheet first, page-specific theme second so it wins -->
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/xeno-arena-traits-picker.css">
+
+<!-- Optional favicon -->
+<link rel="icon" href="images/favicon-96x96.png">
+
+<!-- Shared header + navigation (see js/partials.js) -->
+<script src="js/partials.js"></script>
+
+<!-- Google Analytics + GDPR consent notice (see js/consent.js) -->
+<script src="js/consent.js"></script>
+</head>
+<body>
+
+<!-- Header + navigation are injected here by js/partials.js -->
+<div id="site-chrome"></div>
+
+<div class="wrap">
+
+  <header class="head">
+    <h1>Xeno Arena reference</h1>
+    <p>Affinity matchups + your pet's moveset builder on the left, full move-family library with tier scoring on the right. Click any family card (or a ranking row) to add it to your pet. Scoring model and affinity names from your uploaded spreadsheet (Swarm 6.4 source data).</p>
+  </header>
+
+  <div class="grid">
+
+    <div>
+      <div class="card">
+        <h2>Affinity wheel</h2>
+        <svg id="wheel" viewBox="0 0 400 400">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M1 1L9 5L1 9" fill="context-stroke"/>
+            </marker>
+          </defs>
+          <g id="edges"></g>
+          <g id="nodes"></g>
+        </svg>
+        <div class="legend" id="legend"></div>
+        <div class="detail" id="detail">
+          <div class="name" style="color:var(--muted);font-weight:500">Click an affinity for its matchups</div>
+        </div>
+      </div>
+
+      <div class="card pet-panel">
+        <div class="pet-top">
+          <b style="font-size:.9rem">Your pet's moveset</b>
+          <div class="pet-stats"><span>Moves: <b id="petCount">0</b></span><span>Avg score: <b id="petAvg">&mdash;</b></span></div>
+        </div>
+        <div class="pet-chips" id="petChips"><span class="pet-empty">Click move families on the right to add them here (a pet typically rolls 4&ndash;6)</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <div class="method">
+        <b>Scoring model</b> (from your spreadsheet, Model tab): each family is rated 1&ndash;5 on <b>Damage</b> (raw damage contribution), <b>Utility</b> (control/sustain/mitigation/tempo) and <b>CD&nbsp;Efficiency</b> (how often you can actually use it). Blended <b>Score</b> = 0.35&times;Damage + 0.40&times;Utility + 0.25&times;CD&nbsp;Eff, on a 1.00&ndash;5.00 scale. Tiers: S &ge;3.30, A &ge;2.95, B &ge;2.55, C below. This is a hypothesis to test against real pets, not measured in-game damage &mdash; and it isn't an official Hello Games ranking.
+      </div>
+
+      <h2>Tier ranking <span style="text-transform:none;font-weight:400;color:var(--muted)">&mdash; middle column follows the affinity you pick above</span></h2>
+      <div class="rank-strip">
+        <div class="rank-head">
+          <span style="width:20px"></span>
+          <span class="rank-name">Family</span>
+          <span class="rank-aff" id="rankAffHead">Move name</span>
+          <span style="flex:1"></span>
+          <span style="width:32px">Score</span>
+        </div>
+        <div id="rankStrip"></div>
+      </div>
+
+      <h2 style="margin-top:20px">Move families (34)</h2>
+      <div class="controls">
+        <div id="catFilter" style="display:flex;gap:8px"></div>
+        <select id="sortBy">
+          <option value="score">Sort: score</option>
+          <option value="name">Sort: name</option>
+          <option value="cat">Sort: category</option>
+        </select>
+      </div>
+      <input type="search" id="search" placeholder="Search move family or effect...">
+      <div id="famList" style="margin-top:14px"></div>
+      <div class="note">Anomalous &amp; Radioactive reuse the base family name in-game (confirmed only for Swipe), so they're omitted from the affinity chips. "Dont Touch" wasn't included in the uploaded scoring model, so it shows without a tier/score.</div>
+    </div>
+
+  </div>
+</div>
+<script src="js/xeno-arena-traits-picker.js"></script>
+</body>
+</html>
