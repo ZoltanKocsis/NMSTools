@@ -19,8 +19,8 @@
     var NAV_LINKS = [
         { href: 'index.html', label: 'Home' },
         { href: 'xeno_arena_counter_picker.html', label: 'Xeno Arena Counter Calculator' },
+        { href: 'xeno-arena-traits-picker.html', label: 'Xeno Moves Calc' },
         { href: 'pets_trait_triangle.html', label: 'Pets Trait Triangle' },
-        { href: 'visited_planets.html', label: 'Visited Planets' },
         { href: 'nms_glyph_decoder.html', label: 'Symbol Reading' },
         { href: 'about.html', label: 'About' }
     ];
