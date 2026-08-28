@@ -18,8 +18,8 @@
 
     var NAV_LINKS = [
         { href: 'index.html', label: 'Home' },
-        { href: 'xeno_arena_counter_picker.html', label: 'Xeno Arena Counter Calculator' },
-        { href: 'xeno-arena-traits-picker.html', label: 'Xeno Moves Calc' },
+        { href: 'xeno_arena_counter_picker.html', label: 'Xeno Arena Best Pest Picker' },
+        { href: 'xeno-arena-traits-picker.html', label: 'Xeno Moves Calculator' },
         { href: 'pets_trait_triangle.html', label: 'Pets Trait Triangle' },
         { href: 'nms_glyph_decoder.html', label: 'Symbol Reading' },
         { href: 'about.html', label: 'About' }
