@@ -6,21 +6,21 @@
 
 /* ---------- data ---------- */
 var AXES = [
-  { key:0, color:"#3ddc84",
+  { key:0, color:"#48c816",
     trait:"Helpful", anti:"Playful",       /* trait = corner, anti = opposite side */
     cx:150, cy:409, value:15,
-    fx:{ Helpful:"2-turn combat buff on itself",
-         Playful:"2-turn dodge chance buff on itself" } },
+    fx:{ Helpful:" 2-turn combat buff chance on the enemy",
+         Playful:"2-turn dodge chance buff- JUMPY" } },
   { key:1, color:"#ff4d4d",
     trait:"Gentle", anti:"Aggressive",
     cx:340, cy:80, value:100,
-    fx:{ Gentle:"2-turn combat debuff on the opponent",
-         Aggressive:"Damage over time on the opponent" } },
-  { key:2, color:"#4d9dff",
+    fx:{ Gentle:"Debufs opponents combat effectiness for 2-turn -DEFENSIVE",
+         Aggressive:"Damage over time (DOT) chance on the opponent element - TANKY"} },
+  { key:2, color:"#111b8a",
     trait:"Devoted", anti:"Independent",
     cx:530, cy:409, value:90,
-    fx:{ Devoted:"Heal over time on itself",
-         Independent:"2-turn accuracy debuff on the opponent" } }
+    fx:{ Devoted:"Heal over time on itself - FAST RECOVERY",
+         Independent:"Debufs opponents accuracy for 2-turns - TECHINCAL" } }
 ];
 
 var BUILDS = {
@@ -116,7 +116,7 @@ function render(){
     tie.setAttribute("x1", p.x); tie.setAttribute("y1", p.y);
     tie.setAttribute("x2", ax.cx); tie.setAttribute("y2", ax.cy);
   });
-
+/*
   var build = BUILDS[poles.join("|")];
   document.getElementById("buildName").textContent = build.name;
   document.getElementById("buildSummary").innerHTML = build.text;
@@ -129,7 +129,7 @@ function render(){
   } else {
     note.hidden = true;
   }
-
+*/
   var rows = "";
   AXES.forEach(function(ax){
     var pole = poleOf(ax), s = strengthOf(ax);
