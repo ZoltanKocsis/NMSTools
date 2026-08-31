@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Xeno Arena Counter Picker</title>
-<link rel="icon" href="images/favicon-96x96.png">
+<!--<link rel="icon" href="images/favicon-96x96.png">   -->
 <link rel="stylesheet" href="css/styles.css">
 
 <!-- Shared header + navigation (see js/partials.js) -->
@@ -21,9 +21,11 @@
 <main class="page-container">
 
     <section class="page-introduction">
-        <h1>⚔️ Xeno Arena Counter Picker</h1>
-        <p>Sets up two A,B best teams of 3  according following different strategies</p>
-        <p>Attack and Defense are weighted equally. Enter your opponent's 3 pet affinities — results assume you can only field one pet per affinity type (no duplicates).</p>
+        <h1>⚔️ Xeno Arena Best Pets Picker</h1>
+        <p>it automates looking up the corresponding affinity tables</p>
+        <p>Offers two altenate teams based merely on their affinites assuming that you have <b>one pet per affinity  from each type</b></p>
+        <p>Since there are too many factors to take into account for more precise prediction these tables mainly for team building </p>
+        <p>Attack and Defense are weighted equally. Enter your opponent's 3 pet affinities — results assume you can only field one pet per affinity type </p>
     </section>
 
     <section class="content-panel">
@@ -47,8 +49,7 @@
         <hr class="section-divider">
 
         <div id="topPetsSection">
-            <h2>🅱️ Top 5 Individual Pets (1-vs-1 vs all 3 opponents)</h2>
-            <div class="section-subtitle">Every affinity ranked by how it would fare fighting each opponent one-on-one</div>
+            <h2>🅱️ Top 5 Individual Pets: 1-vs all 3 opponents</h2>
             <p class="text-muted" id="summaryB"></p>
             <div class="table-container">
                 <table>
@@ -78,12 +79,7 @@
     </section>
 
 </main>
-<!-- =========================================================
-     FOOTER
-    
-<footer class="site-footer">
-    <p>.</p>
-</footer>
+
  ========================================================= -->
 <script src="js/xeno_arena_counter_picker.js"></script>
 </body>
