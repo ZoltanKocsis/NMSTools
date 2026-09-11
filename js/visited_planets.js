@@ -171,6 +171,7 @@ const BIOMES = [
   { label: 'Torrid', main: 'Scorched' },
   { label: 'Toxic', main: 'Toxic' },
   { label: 'Tropical', main: 'Lush' },
+   { label: 'Unusual', main: 'Lush' },
   { label: 'Venomous', main: 'Toxic' },
   { label: 'Verdant', main: 'Lush' },
   { label: 'Viridescent', main: 'Lush' },
